@@ -40,9 +40,9 @@
   .count{font-size:15px;margin:8px 0;}
   .count b{color:var(--accent);font-size:20px;}
   table{width:100%;border-collapse:collapse;font-size:13px;}
-  th{background:var(--panel2);color:var(--accent);text-align:left;padding:8px;border-bottom:2px solid var(--border);
-     position:sticky;top:0;cursor:pointer;white-space:nowrap;}
-  td{padding:7px 8px;border-bottom:1px solid #232848;}
+  th{background:var(--panel2);color:var(--accent);text-align:center;padding:8px;border-bottom:2px solid var(--border);
+     position:sticky;top:0;z-index:2;cursor:pointer;white-space:nowrap;}
+  td{padding:7px 8px;border-bottom:1px solid #232848;text-align:center;}
   tr:hover td{background:#1c2140;}
   .tablewrap{max-height:520px;overflow-y:auto;overflow-x:hidden;border:1px solid var(--border);border-radius:8px;}
   #table1{table-layout:fixed;width:100%;}
@@ -51,6 +51,8 @@
   #table1 th:nth-child(4){width:126px;}
   #table1 td{word-break:break-word;overflow-wrap:anywhere;}
   #table1 .dt{color:var(--sub);}
+  #table1 td.ttl,#table2 td.ttl{text-align:left;position:relative;padding-left:2.4em;}
+  td.ttl .lampbar{position:absolute;left:1em;top:15%;height:70%;width:.5em;border-radius:2px;}
   .old{color:var(--accent2);font-weight:bold;}
   .mid{color:var(--warn);}
   .picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px;}
@@ -77,6 +79,7 @@
   .usage summary{cursor:pointer;color:var(--accent);user-select:none;font-weight:bold;}
   .usage p{color:var(--sub);line-height:1.8;margin:10px 0 0;}
   .usage b{color:var(--text);}
+  .usage a{color:var(--accent);}
   footer{padding:20px 24px 40px;font-size:11px;color:var(--sub);line-height:1.8;
        border-top:1px solid var(--border);margin-top:10px;}
   @media (max-width:640px){ .usage-wrap{padding:10px 10px 0;} footer{padding:16px 14px 30px;} }
@@ -98,9 +101,11 @@
     table{font-size:11px;} td,th{padding:5px 4px;}
     .tablewrap{max-height:60vh;}
     #table1 th{white-space:normal;line-height:1.3;vertical-align:middle;}
-    #table1 th:nth-child(1){width:52px;}
-    #table1 th:nth-child(3){width:34px;}
-    #table1 th:nth-child(4){width:70px;}
+    #table1 th:nth-child(1){width:48px;}
+    #table1 th:nth-child(3){width:32px;}
+    #table1 th:nth-child(4){width:68px;}
+    #table1 td.ttl,#table2 td.ttl{padding-left:1.9em;}
+    td.ttl .lampbar{left:.6em;}
     #table1 .dt{font-size:10px;white-space:normal;}
   }
 </style>
@@ -113,6 +118,7 @@
     <summary>📖 使い方・CSVの取得方法</summary>
     <p><b>① プレーデータCSVを用意する</b><br>
     KONAMI公式の e-amusement サイト／アプリの beatmania IIDX「プレーデータ」ページから、スコアデータのCSVを取得します（CSVダウンロードには e-amusement ベーシックコース等への加入が必要です）。<br>
+    プレイデータCSVのダウンロードは<a href="https://p.eagate.573.jp/game/2dx/33/djdata/score_download.html?style=SP" target="_blank" rel="noopener">こちら</a>から<br>
     ・PCの場合: ダウンロードしたCSVファイルを「📂 CSVを選択」で読み込み<br>
     ・スマホの場合: CSVの内容を全選択してコピーし、「📋 コピペで読み込む」に貼り付け</p>
     <p><b>② 最近プレーしていない曲</b><br>
@@ -144,7 +150,7 @@
       <div class="vitem"><span class="vlabel">最終プレーから</span>
         <input type="number" id="months" value="3" min="1" max="60" style="width:70px;"> <span>か月以上</span></div>
       <div class="vitem"><span class="vlabel">レベル</span>
-        <select id="lvFilter"><option value="">すべて</option></select></div>
+        <select id="lvFilter"><option value="">選択してください</option></select></div>
       <div class="vitem"><span class="vlabel"></span>
         <label class="checkline"><input type="checkbox" id="excludeZero">プレー回数0の曲を除外</label></div>
       <div class="vitem"><span class="vlabel"></span>
@@ -196,7 +202,7 @@
     </details>
     <div class="vstack">
       <div class="vitem"><span class="vlabel">レベル</span>
-        <select id="lvFilter2"><option value="">すべて</option></select></div>
+        <select id="lvFilter2"><option value="">選択してください</option></select></div>
       <div class="vitem"><span class="vlabel"></span>
         <label class="checkline"><input type="checkbox" id="includeUnplayed">現行スコア0（未プレー）の譜面も表示</label></div>
       <div class="vitem"><span class="vlabel"></span>
@@ -210,7 +216,7 @@
     <div class="tablewrap">
       <table id="table2">
         <thead><tr>
-          <th>タイトル</th><th>難易度</th><th>☆</th><th>現行スコア</th><th>過去ベスト</th><th>差</th><th>過去ファイル</th>
+          <th>タイトル</th><th>難易度</th><th>現行スコア</th><th>過去ベスト</th><th>差</th><th>過去ファイル</th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -321,19 +327,51 @@ function applyFilter(){
   if(!allSongs.length)return;
   const months = parseInt(document.getElementById("months").value)||3;
   const lv = parseInt(document.getElementById("lvFilter").value)||0;
+  if(!lv){
+    filtered=[];
+    document.querySelector("#table1 tbody").innerHTML="";
+    document.getElementById("count1").innerHTML =
+      `レベルを選択すると該当曲を表示します（全 ${allSongs.length} 曲）`;
+    return;
+  }
   const exZero = document.getElementById("excludeZero").checked;
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth()-months);
   filtered = allSongs.filter(s=>{
     if(!s.last || isNaN(s.last)) return false;
     if(s.last > cutoff) return false;
-    if(lv && !s.charts.some(c=>c.level===lv)) return false;
+    /* 選択レベルの譜面にスコアが付いている曲のみ表示
+       （他難易度のプレーでもプレー回数が加算されるため、スコアで判定） */
+    if(!s.charts.some(c=>c.level===lv && c.score>0)) return false;
     if(exZero && s.plays===0) return false;
     return true;
   });
   renderTable1();
 }
 function daysAgo(d){ return Math.floor((Date.now()-d.getTime())/86400000); }
+
+const LAMP_COLORS={
+  "FULLCOMBO CLEAR":"#f9c",
+  "EX HARD CLEAR":"#FFE375",
+  "HARD CLEAR":"#DD5454",
+  "CLEAR":"#5EEAFF",
+  "EASY CLEAR":"#BDFF7C",
+  "ASSIST CLEAR":"#9474DD",
+  "FAILED":"#A9A9A9",
+  "NO PLAY":"#ffffff"
+};
+const LAMP_RANK=["NO PLAY","FAILED","ASSIST CLEAR","EASY CLEAR","CLEAR","HARD CLEAR","EX HARD CLEAR","FULLCOMBO CLEAR"];
+/* 曲のランプ: レベル指定時はそのレベルの譜面、未指定時は全譜面中のベストランプ */
+function songLamp(s){
+  const lv = parseInt(document.getElementById("lvFilter").value)||0;
+  let best="NO PLAY";
+  for(const c of s.charts){
+    if(c.level===0) continue;
+    if(lv && c.level!==lv) continue;
+    if(LAMP_RANK.indexOf(c.clear) > LAMP_RANK.indexOf(best)) best=c.clear;
+  }
+  return best;
+}
 
 function renderTable1(){
   const tb=document.querySelector("#table1 tbody");
@@ -342,6 +380,7 @@ function renderTable1(){
     switch(sortKey){
       case "plays": va=a.plays;vb=b.plays;break;
       case "days": case "last": va=a.last;vb=b.last;break;
+      case "lamp": va=LAMP_RANK.indexOf(songLamp(a));vb=LAMP_RANK.indexOf(songLamp(b));break;
       default: va=a[sortKey];vb=b[sortKey];
     }
     if(va<vb)return sortAsc?-1:1;
@@ -351,7 +390,10 @@ function renderTable1(){
   tb.innerHTML = arr.map(s=>{
     const d=daysAgo(s.last);
     const cls = d>=270?"old":(d>=180?"mid":"");
-    return `<tr><td class="${cls}">${d}日前</td><td class="ttl">${escapeHtml(s.title)}</td>
+    const lamp = songLamp(s);
+    const lampColor = LAMP_COLORS[lamp]||"#ffffff";
+    return `<tr><td class="${cls}">${d}日前</td>
+      <td class="ttl"><span class="lampbar" style="background:${lampColor}" title="${escapeHtml(lamp)}"></span>${escapeHtml(s.title)}</td>
       <td>${s.plays}</td><td class="dt">${escapeHtml(s.lastStr)}</td></tr>`;
   }).join("");
   document.getElementById("count1").innerHTML =
@@ -444,9 +486,15 @@ function updateCompareBtn(){
   document.getElementById("compareBtn").disabled = !(curSongs && pastData.length);
 }
 
-document.getElementById("compareBtn").addEventListener("click",()=>{
-  const includeUnplayed = document.getElementById("includeUnplayed").checked;
+function runCompare(){
+  if(!(curSongs && pastData.length)) return;
   const lv2 = parseInt(document.getElementById("lvFilter2").value)||0;
+  if(!lv2){
+    document.querySelector("#table2 tbody").innerHTML="";
+    document.getElementById("count2").innerHTML="レベルを選択すると比較結果を表示します";
+    return;
+  }
+  const includeUnplayed = document.getElementById("includeUnplayed").checked;
   const rows=[];
   for(const s of curSongs){
     for(let d=0;d<5;d++){
@@ -462,7 +510,7 @@ document.getElementById("compareBtn").addEventListener("click",()=>{
       }
       if(best===0) continue;
       if(cur.score < best && (cur.score>0 || includeUnplayed)){
-        rows.push({title:s.title, diff:DIFFS[d], lv:cur.level,
+        rows.push({title:s.title, diff:DIFFS[d][0], lv:cur.level, lamp:cur.clear,
                    cur:cur.score, best, diffN:cur.score-best, file:bestFile});
       }
     }
@@ -470,13 +518,16 @@ document.getElementById("compareBtn").addEventListener("click",()=>{
   rows.sort((a,b)=>a.diffN-b.diffN);
   const tb=document.querySelector("#table2 tbody");
   tb.innerHTML = rows.map(r=>
-    `<tr><td>${escapeHtml(r.title)}</td><td>${r.diff}</td><td>☆${r.lv}</td>
+    `<tr><td class="ttl"><span class="lampbar" style="background:${LAMP_COLORS[r.lamp]||'#ffffff'}" title="${escapeHtml(r.lamp)}"></span>${escapeHtml(r.title)}</td><td>${r.diff}</td>
      <td>${r.cur===0?'<span class="badge">未プレー</span>':r.cur}</td>
      <td>${r.best}</td><td class="down">${r.diffN}</td><td>${escapeHtml(r.file)}</td></tr>`
   ).join("");
   document.getElementById("count2").innerHTML =
     `スコアが下がっている譜面: <b>${rows.length}</b> 件`;
-});
+}
+document.getElementById("compareBtn").addEventListener("click",runCompare);
+document.getElementById("lvFilter2").addEventListener("change",runCompare);
+document.getElementById("includeUnplayed").addEventListener("change",runCompare);
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
