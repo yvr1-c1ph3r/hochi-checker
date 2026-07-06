@@ -93,6 +93,7 @@
   @media (max-width:640px){ .usage-wrap{padding:10px 10px 0;} footer{padding:16px 14px 30px;} }
   details.pastebox{margin-top:10px;width:100%;}
   details.pastebox summary{cursor:pointer;font-size:13px;color:var(--accent);user-select:none;}
+  details.pastebox .hint a{color:var(--accent);}
   details.pastebox textarea{width:100%;height:110px;margin-top:8px;background:var(--panel2);
        color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;
        font-size:12px;font-family:monospace;resize:vertical;}
@@ -157,6 +158,7 @@
     </div>
     <details class="pastebox">
       <summary>📋 コピペで読み込む（スマホ向け）</summary>
+      <div class="hint">プレイデータCSVのダウンロードは<a href="https://p.eagate.573.jp/game/2dx/33/djdata/score_download.html?style=SP" target="_blank" rel="noopener">こちら</a>から</div>
       <textarea id="paste1" placeholder="公式サイト等でコピーしたCSVの内容をここに貼り付けてください"></textarea>
       <button class="secondary" id="pasteBtn1">貼り付けた内容を読み込む</button>
     </details>
@@ -203,6 +205,7 @@
     </div>
     <details class="pastebox">
       <summary>📋 現行バージョンをコピペで読み込む</summary>
+      <div class="hint">プレイデータCSVのダウンロードは<a href="https://p.eagate.573.jp/game/2dx/33/djdata/score_download.html?style=SP" target="_blank" rel="noopener">こちら</a>から</div>
       <textarea id="pasteCur" placeholder="現行バージョンのCSV内容を貼り付け"></textarea>
       <button class="secondary" id="pasteBtnCur">貼り付けた内容を読み込む</button>
     </details>
