@@ -63,8 +63,7 @@
   #table1{table-layout:fixed;width:100%;}
   #table1 th:nth-child(1){width:80px;}
   #table1 th:nth-child(3){width:72px;}
-  #table1 th:nth-child(4){width:48px;}
-  #table1 th:nth-child(5){width:126px;}
+  #table1 th:nth-child(4){width:126px;}
   #table1 td{word-break:break-word;overflow-wrap:anywhere;}
   #table1 tbody td{height:44px;}
   #table1 .dt{color:var(--sub);}
@@ -74,7 +73,7 @@
   #table2 th:nth-child(4){width:70px;}
   #table2 td{word-break:break-word;overflow-wrap:anywhere;}
   #table1 td.ttl,#table2 td.ttl{text-align:left;position:relative;padding-left:4.7em;}
-  td.ttl .lvnum{position:absolute;left:.3em;top:50%;transform:translateY(-50%);width:1.4em;text-align:right;font-weight:bold;font-size:1.4em;}
+  td.ttl .lvnum{position:absolute;left:.3em;top:50%;transform:translateY(-50%);width:1.4em;text-align:right;font-weight:bold;font-size:1.4em;white-space:nowrap;}
   td.ttl .lampbar{position:absolute;left:3.3em;top:15%;height:70%;width:.35em;border-radius:2px;}
   .old{color:var(--accent2);font-weight:bold;}
   .mid{color:var(--warn);}
@@ -132,13 +131,12 @@
     #table1 th,#table2 th{white-space:normal;line-height:1.3;vertical-align:middle;}
     #table1 th:nth-child(1){width:48px;}
     #table1 th:nth-child(3){width:40px;}
-    #table1 th:nth-child(4){width:32px;}
-    #table1 th:nth-child(5){width:68px;}
+    #table1 th:nth-child(4){width:68px;}
     #table2 th:nth-child(2){width:52px;}
     #table2 th:nth-child(3){width:52px;}
     #table2 th:nth-child(4){width:42px;}
     #table1 td.ttl,#table2 td.ttl{padding-left:4.1em;}
-    td.ttl .lvnum{left:.1em;width:1.4em;}
+    td.ttl .lvnum{left:.1em;width:1.6em;font-size:1.15em;}
     td.ttl .lampbar{left:2.9em;}
     #table1 .dt{font-size:10px;white-space:normal;}
     #table1 tbody td{height:38px;}
@@ -227,7 +225,7 @@
         <thead><tr>
           <th data-k="days">経過日数</th><th data-k="title">タイトル</th>
           <th data-k="djlevel">DJレベル</th>
-          <th data-k="plays">回数</th><th data-k="last">最終プレー日時</th>
+          <th data-k="last">最終プレー日時</th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -518,7 +516,7 @@ function renderTable1(){
     return `<tr>${daysCell}
       <td class="ttl"><span class="lvnum" style="color:${diffColor(s._mi)}">${m.level}</span><span class="lampbar" style="${lampStyle(m.clear)}" title="${escapeHtml(m.clear)}"></span>${escapeHtml(s.title)}</td>
       <td>${m.score>0?`<span class="djsm">${escapeHtml(m.djlevel||"---")}</span><br><span class="scsm">${m.score}</span>`:"---"}</td>
-      <td>${s.plays}</td><td class="dt">${escapeHtml(s.lastStr)}</td></tr>`;
+      <td class="dt">${escapeHtml(s.lastStr)}</td></tr>`;
   }).join("");
   document.getElementById("count1").innerHTML =
     `該当曲: <b>${filtered.length}</b> 曲 / 全 ${allSongs.length} 曲`;
