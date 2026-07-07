@@ -13,9 +13,24 @@
     --bg:#0d0f1a; --panel:#171a2b; --panel2:#1f2340; --border:#2e3560;
     --text:#e8eaf6; --sub:#9aa0c3; --accent:#00d4ff; --accent2:#ff4d8d; --ok:#57e389; --warn:#ffcc44;
   }
+  html[data-theme="light"]{
+    --bg:#f2f4fa; --panel:#ffffff; --panel2:#e9edf7; --border:#c6cee6;
+    --text:#1d2436; --sub:#5b6484; --accent:#0d7fb8; --accent2:#d63384; --ok:#2f9e4f; --warn:#b8860b;
+  }
+  html[data-theme="light"] header{background:linear-gradient(90deg,#e3e9ff,#efe4ff);}
+  html[data-theme="light"] td{border-bottom:1px solid #e2e6f2;}
+  html[data-theme="light"] tr:hover td{background:#eef1fb;}
+  html[data-theme="light"] label.filelabel:hover{background:#dfe6f8;}
+  html[data-theme="light"] .pick{background:linear-gradient(135deg,#efe9ff,#e3f1ff);}
   *{box-sizing:border-box;}
   body{margin:0;font-family:"Segoe UI","Hiragino Sans","Meiryo",sans-serif;background:var(--bg);color:var(--text);}
-  header{padding:18px 24px;background:linear-gradient(90deg,#101328,#1a1040);border-bottom:2px solid var(--accent);}
+  header{padding:18px 24px;background:linear-gradient(90deg,#101328,#1a1040);border-bottom:2px solid var(--accent);
+       display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .themetoggle{cursor:pointer;background:var(--panel2);border:1px solid var(--border);
+       border-radius:999px;padding:6px 14px;font-size:15px;user-select:none;flex-shrink:0;}
+  .themetoggle .ic{opacity:.35;}
+  .themetoggle .ic.on{opacity:1;}
+  .themetoggle .tsep{color:var(--sub);margin:0 4px;}
   header h1{margin:0;font-size:20px;letter-spacing:1px;}
   header h1 span{color:var(--accent);}
   .tabs{display:flex;gap:4px;padding:12px 24px 0;}
@@ -35,7 +50,7 @@
   button{background:linear-gradient(90deg,var(--accent2),#ff7ab0);border:none;color:#fff;padding:10px 22px;
        border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;}
   button:disabled{opacity:.35;cursor:default;}
-  button.secondary{background:var(--panel2);border:1px solid var(--border);font-weight:normal;}
+  button.secondary{background:var(--panel2);border:1px solid var(--border);font-weight:normal;color:var(--text);}
   .status{font-size:13px;color:var(--sub);}
   .count{font-size:15px;margin:8px 0;}
   .count b{color:var(--accent);font-size:20px;}
@@ -131,7 +146,12 @@
 </style>
 </head>
 <body>
-<header><h1>beatmania IIDX <span>放置曲チェッカー</span></h1></header>
+<header>
+  <h1>beatmania IIDX <span>放置曲チェッカー</span></h1>
+  <div class="themetoggle" id="themeToggle" title="ライトモード / ダークモード切り替え">
+    <span class="ic" id="tgSun">☀️</span><span class="tsep">/</span><span class="ic" id="tgMoon">🌙</span>
+  </div>
+</header>
 
 <div class="usage-wrap">
   <details class="usage">
@@ -145,7 +165,7 @@
     期間・レベルを選ぶと該当曲が即時に一覧表示されます。「🎲 ランダムで4曲選ぶ」を押すと、その中から今日の課題曲を決められます。</p>
     <p><b>③ バージョン間スコア比較</b><br>
     現行バージョンと過去バージョンのCSVを読み込んで比較すると、過去の自己ベストよりスコアが下がっている譜面を洗い出せます。</p>
-    <p>※ 読み込んだデータはすべてお使いの端末（ブラウザ）内で処理され、外部に送信されることはありません。</p>
+    <p>※ 読み込んだデータはすべてお使いの端末（ブラウザ）内で処理・保存され、外部に送信されることはありません。次回アクセス時には前回読み込んだデータが自動で復元されます（🗑ボタンで削除できます）。</p>
   </details>
 </div>
 
@@ -159,6 +179,7 @@
   <div class="card">
     <div class="row">
       <label class="filelabel">📂 プレーデータCSVを選択<input type="file" id="csv1" accept=".csv,text/csv"></label>
+      <button class="secondary" id="clearSaved1">🗑 保存データをクリア</button>
       <span class="status" id="status1">未読み込み</span>
     </div>
     <details class="pastebox">
@@ -220,6 +241,7 @@
     <h3>過去バージョンよりスコアが下がっている譜面を探す</h3>
     <div class="row">
       <label class="filelabel">📂 現行バージョンのCSV<input type="file" id="csvCur" accept=".csv"></label>
+      <button class="secondary" id="clearSaved2">🗑 保存データをクリア</button>
       <span class="status" id="statusCur">未読み込み</span>
     </div>
     <details class="pastebox">
@@ -275,8 +297,21 @@
 <script>
 "use strict";
 const DIFFS = ["BEGINNER","NORMAL","HYPER","ANOTHER","LEGGENDARIA"];
-/* 難易度カラー: B=黄緑 N=水色 H=黄 A=赤 L=紫 */
+/* 難易度カラー: B=黄緑 N=水色 H=黄 A=赤 L=紫（ライトはマスタード等の濃色） */
 const DIFF_COLORS=["#9BDB4D","#5EEAFF","#FFD948","#FF5252","#C77DFF"];
+const DIFF_COLORS_LIGHT=["#5FA82E","#1E9FBF","#D4A017","#E03131","#9A4DE0"];
+function isLight(){ return document.documentElement.dataset.theme==="light"; }
+function diffColor(i){ return (isLight()?DIFF_COLORS_LIGHT:DIFF_COLORS)[i] || (isLight()?"#333":"#fff"); }
+
+/* ---------- データ保持 (localStorage) ---------- */
+const LS_MAIN="iidxpc_main", LS_CUR="iidxpc_cur", LS_PAST="iidxpc_past";
+let restoring=false;
+let pastRaw=[]; // [{label,text}]
+function saveLS(key,val){
+  try{ localStorage.setItem(key, JSON.stringify(val)); }
+  catch(e){ console.warn("データ保存に失敗しました:",e); }
+}
+function removeLS(key){ try{ localStorage.removeItem(key); }catch(e){} }
 
 /* レベル選択肢 ☆12〜☆1 */
 ["lvFilter","lvFilter2"].forEach(id=>{
@@ -358,6 +393,7 @@ function loadMainSongs(text,label){
   allSongs = songs;
   document.getElementById("status1").textContent = `${label}（${allSongs.length}曲）を読み込みました`;
   document.getElementById("randomBtn").disabled=false;
+  if(!restoring) saveLS(LS_MAIN,{label,text});
   applyFilter();
 }
 document.getElementById("csv1").addEventListener("change",async e=>{
@@ -368,6 +404,15 @@ document.getElementById("pasteBtn1").addEventListener("click",()=>{
   const text=document.getElementById("paste1").value;
   if(!text.trim()){alert("CSVの内容を貼り付けてください");return;}
   loadMainSongs(text,"貼り付けデータ");
+});
+document.getElementById("clearSaved1").addEventListener("click",()=>{
+  removeLS(LS_MAIN);
+  allSongs=[]; filtered=[];
+  document.querySelector("#table1 tbody").innerHTML="";
+  document.getElementById("count1").textContent="CSVを読み込んでください";
+  document.getElementById("status1").textContent="未読み込み";
+  document.getElementById("randomBtn").disabled=true;
+  document.getElementById("pickArea").style.display="none";
 });
 document.getElementById("months").addEventListener("input",applyFilter);
 document.getElementById("lvFilter").addEventListener("change",applyFilter);
@@ -427,6 +472,23 @@ const LAMP_COLORS={
   "FAILED":"#A9A9A9",
   "NO PLAY":"#ffffff"
 };
+/* ライトモード用ランプカラー（EXHはマスタードイエロー、淡色は濃いめに調整） */
+const LAMP_COLORS_LIGHT={
+  "FULLCOMBO CLEAR":"#FF66B2",
+  "EX HARD CLEAR":"#D4A017",
+  "HARD CLEAR":"#DD5454",
+  "CLEAR":"#21A9D8",
+  "EASY CLEAR":"#6FBF3A",
+  "ASSIST CLEAR":"#9474DD",
+  "FAILED":"#A9A9A9",
+  "NO PLAY":"#ffffff"
+};
+function lampStyle(name){
+  const c=(isLight()?LAMP_COLORS_LIGHT:LAMP_COLORS)[name]||"#ffffff";
+  let s="background:"+c;
+  if(name==="NO PLAY" && isLight()) s+=";border:1px solid #9aa0b8";
+  return s;
+}
 const LAMP_RANK=["NO PLAY","FAILED","ASSIST CLEAR","EASY CLEAR","CLEAR","HARD CLEAR","EX HARD CLEAR","FULLCOMBO CLEAR"];
 const DJ_RANK=["---","F","E","D","C","B","A","AA","AAA"];
 
@@ -449,13 +511,12 @@ function renderTable1(){
     const d=daysAgo(s.last);
     const cls = d>=270?"old":(d>=180?"mid":"");
     const m = s._m;
-    const lampColor = LAMP_COLORS[m.clear]||"#ffffff";
     let daysCell;
     if(m.score>0) daysCell = `<td class="${cls}">${d}日前</td>`;
     else if(m.clear!=="NO PLAY") daysCell = `<td class="npdays">今作未</td>`;
     else daysCell = `<td class="npdays">未</td>`;
     return `<tr>${daysCell}
-      <td class="ttl"><span class="lvnum" style="color:${DIFF_COLORS[s._mi]||'#fff'}">${m.level}</span><span class="lampbar" style="background:${lampColor}" title="${escapeHtml(m.clear)}"></span>${escapeHtml(s.title)}</td>
+      <td class="ttl"><span class="lvnum" style="color:${diffColor(s._mi)}">${m.level}</span><span class="lampbar" style="${lampStyle(m.clear)}" title="${escapeHtml(m.clear)}"></span>${escapeHtml(s.title)}</td>
       <td>${m.score>0?`<span class="djsm">${escapeHtml(m.djlevel||"---")}</span><br><span class="scsm">${m.score}</span>`:"---"}</td>
       <td>${s.plays}</td><td class="dt">${escapeHtml(s.lastStr)}</td></tr>`;
   }).join("");
@@ -504,6 +565,7 @@ function loadCur(text,label){
   if(!songs.length){alert("CSVデータを認識できませんでした。");return;}
   curSongs = songs;
   document.getElementById("statusCur").textContent = `${label}（${curSongs.length}曲）`;
+  if(!restoring) saveLS(LS_CUR,{label,text});
   runCompare();
 }
 function addPast(text,label){
@@ -512,6 +574,8 @@ function addPast(text,label){
   const map=new Map();
   songs.forEach(s=>map.set(s.title,s));
   pastData.push({name:label, map});
+  pastRaw.push({label, text});
+  if(!restoring) saveLS(LS_PAST, pastRaw);
   renderPastStatus();
   runCompare();
 }
@@ -541,7 +605,16 @@ document.getElementById("pasteBtnPast").addEventListener("click",()=>{
   ta.value="";
 });
 document.getElementById("clearPastBtn").addEventListener("click",()=>{
-  pastData=[];
+  pastData=[]; pastRaw=[];
+  removeLS(LS_PAST);
+  renderPastStatus();
+  document.querySelector("#table2 tbody").innerHTML="";
+  document.getElementById("count2").innerHTML="現行・過去のCSVを読み込み、レベルを選択すると自動で比較します";
+});
+document.getElementById("clearSaved2").addEventListener("click",()=>{
+  removeLS(LS_CUR); removeLS(LS_PAST);
+  curSongs=null; pastData=[]; pastRaw=[];
+  document.getElementById("statusCur").textContent="未読み込み";
   renderPastStatus();
   document.querySelector("#table2 tbody").innerHTML="";
   document.getElementById("count2").innerHTML="現行・過去のCSVを読み込み、レベルを選択すると自動で比較します";
@@ -587,7 +660,7 @@ function runCompare(){
     const curCell = r.cur===0
       ? '<span class="badge">未プレー</span>'
       : `<span class="djsm">${escapeHtml(r.curDj||"---")}</span><br><span class="scsm">${r.cur}</span>`;
-    return `<tr><td class="ttl"><span class="lvnum" style="color:${DIFF_COLORS[r.di]||'#fff'}">${r.lv}</span><span class="lampbar" style="background:${LAMP_COLORS[r.lamp]||'#ffffff'}" title="${escapeHtml(r.lamp)}"></span>${escapeHtml(r.title)}</td>
+    return `<tr><td class="ttl"><span class="lvnum" style="color:${diffColor(r.di)}">${r.lv}</span><span class="lampbar" style="${lampStyle(r.lamp)}" title="${escapeHtml(r.lamp)}"></span>${escapeHtml(r.title)}</td>
      <td>${curCell}</td>
      <td><span class="djsm">${escapeHtml(r.pastDj||"---")}</span><br><span class="scsm">${r.best}</span></td><td class="down">${r.diffN}</td></tr>`;
   }).join("");
@@ -603,6 +676,47 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 }
 
+/* ---------- テーマ切り替え ---------- */
+const THEME_KEY="iidxpc_theme";
+function setTheme(t,save){
+  document.documentElement.dataset.theme=t;
+  if(save){ try{ localStorage.setItem(THEME_KEY,t); }catch(e){} }
+  const mc=document.querySelector('meta[name="theme-color"]');
+  if(mc) mc.setAttribute("content", t==="light" ? "#f2f4fa" : "#0d0f1a");
+  document.getElementById("tgSun").classList.toggle("on", t==="light");
+  document.getElementById("tgMoon").classList.toggle("on", t!=="light");
+  /* ランプ・難易度色を新テーマで描き直す */
+  if(allSongs.length) applyFilter();
+  runCompare();
+}
+document.getElementById("themeToggle").addEventListener("click",()=>{
+  setTheme(isLight() ? "dark" : "light", true);
+});
+(function initTheme(){
+  let t=null;
+  try{ t=localStorage.getItem(THEME_KEY); }catch(e){}
+  /* デフォルトはダークモード（切り替えた場合のみその設定を維持） */
+  setTheme(t==="light" ? "light" : "dark", false);
+})();
+
+/* ---------- 保存データの復元 ---------- */
+(function restoreSaved(){
+  restoring=true;
+  try{
+    const m=JSON.parse(localStorage.getItem(LS_MAIN)||"null");
+    if(m && m.text) loadMainSongs(m.text, `${m.label}【復元】`);
+  }catch(e){ console.warn("復元に失敗(メイン):",e); }
+  try{
+    const c=JSON.parse(localStorage.getItem(LS_CUR)||"null");
+    if(c && c.text) loadCur(c.text, `${c.label}【復元】`);
+  }catch(e){ console.warn("復元に失敗(現行):",e); }
+  try{
+    const arr=JSON.parse(localStorage.getItem(LS_PAST)||"[]");
+    for(const p of arr){ if(p && p.text) addPast(p.text, p.label); }
+  }catch(e){ console.warn("復元に失敗(過去):",e); }
+  restoring=false;
+})();
+
 /* PWA */
 if("serviceWorker" in navigator && location.protocol==="https:"){
   navigator.serviceWorker.register("sw.js").catch(()=>{});
@@ -612,7 +726,7 @@ if("serviceWorker" in navigator && location.protocol==="https:"){
 <footer>
   本サイトは個人が制作した非公式のファンツールであり、株式会社コナミアミューズメントおよびコナミグループとは一切関係ありません。<br>
   「beatmania IIDX」「e-amusement」はコナミグループの商標または登録商標です。<br>
-  読み込んだプレーデータはお使いのブラウザ内でのみ処理され、サーバー等の外部に送信・保存されることはありません。
+  読み込んだプレーデータはお使いのブラウザ内でのみ処理・保存され、サーバー等の外部に送信されることはありません。
 </footer>
 </body>
 </html>
