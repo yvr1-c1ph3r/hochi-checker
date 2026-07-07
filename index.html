@@ -47,22 +47,25 @@
   .tablewrap{max-height:520px;overflow-y:auto;overflow-x:hidden;border:1px solid var(--border);border-radius:8px;}
   #table1{table-layout:fixed;width:100%;}
   #table1 th:nth-child(1){width:80px;}
-  #table1 th:nth-child(3){width:48px;}
-  #table1 th:nth-child(4){width:126px;}
+  #table1 th:nth-child(3){width:72px;}
+  #table1 th:nth-child(4){width:48px;}
+  #table1 th:nth-child(5){width:126px;}
   #table1 td{word-break:break-word;overflow-wrap:anywhere;}
+  #table1 tbody td{height:44px;}
   #table1 .dt{color:var(--sub);}
   #table2{table-layout:fixed;width:100%;}
-  #table2 th:nth-child(2){width:52px;}
-  #table2 th:nth-child(3){width:80px;}
-  #table2 th:nth-child(4){width:80px;}
-  #table2 th:nth-child(5){width:64px;}
-  #table2 th:nth-child(6){width:130px;}
+  #table2 th:nth-child(2){width:90px;}
+  #table2 th:nth-child(3){width:90px;}
+  #table2 th:nth-child(4){width:70px;}
   #table2 td{word-break:break-word;overflow-wrap:anywhere;}
-  #table1 td.ttl,#table2 td.ttl{text-align:left;position:relative;padding-left:2.4em;}
-  td.ttl .lampbar{position:absolute;left:1em;top:15%;height:70%;width:.5em;border-radius:2px;}
+  #table1 td.ttl,#table2 td.ttl{text-align:left;position:relative;padding-left:4.7em;}
+  td.ttl .lvnum{position:absolute;left:.3em;top:50%;transform:translateY(-50%);width:1.4em;text-align:right;font-weight:bold;font-size:1.4em;}
+  td.ttl .lampbar{position:absolute;left:3.3em;top:15%;height:70%;width:.35em;border-radius:2px;}
   .old{color:var(--accent2);font-weight:bold;}
   .mid{color:var(--warn);}
   .npdays{color:var(--sub);font-size:11px;}
+  .djsm{color:var(--text);font-weight:bold;}
+  .scsm{font-size:11px;}
   .picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px;}
   .pick{background:linear-gradient(135deg,#241b4d,#12305a);border:1px solid var(--accent);border-radius:10px;padding:14px;}
   .pick .t{font-size:16px;font-weight:bold;margin-bottom:4px;}
@@ -77,9 +80,11 @@
   .hint{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.6;}
   .vstack{display:flex;flex-direction:column;gap:12px;margin-top:16px;align-items:flex-start;}
   .vitem{display:flex;align-items:center;gap:10px;}
-  .vlabel{display:inline-block;width:110px;font-size:13px;color:var(--sub);flex-shrink:0;}
+  .vlabel{display:inline-block;width:130px;font-size:13px;color:var(--sub);flex-shrink:0;}
+  .vlabel br.mbr{display:none;}
   @media (max-width:640px){
     .vlabel{width:96px;font-size:12px;}
+    .vlabel br.mbr{display:block;}
     .vitem button{width:calc(100vw - 160px);max-width:280px;}
   }
   .usage-wrap{padding:14px 24px 0;}
@@ -111,17 +116,17 @@
     .tablewrap{max-height:60vh;}
     #table1 th,#table2 th{white-space:normal;line-height:1.3;vertical-align:middle;}
     #table1 th:nth-child(1){width:48px;}
-    #table1 th:nth-child(3){width:32px;}
-    #table1 th:nth-child(4){width:68px;}
-    #table2 th:nth-child(2){width:30px;}
-    #table2 th:nth-child(3){width:44px;}
-    #table2 th:nth-child(4){width:44px;}
-    #table2 th:nth-child(5){width:38px;}
-    #table2 th:nth-child(6){width:54px;}
-    #table2{font-size:10px;}
-    #table1 td.ttl,#table2 td.ttl{padding-left:1.9em;}
-    td.ttl .lampbar{left:.6em;}
+    #table1 th:nth-child(3){width:40px;}
+    #table1 th:nth-child(4){width:32px;}
+    #table1 th:nth-child(5){width:68px;}
+    #table2 th:nth-child(2){width:52px;}
+    #table2 th:nth-child(3){width:52px;}
+    #table2 th:nth-child(4){width:42px;}
+    #table1 td.ttl,#table2 td.ttl{padding-left:4.1em;}
+    td.ttl .lvnum{left:.1em;width:1.4em;}
+    td.ttl .lampbar{left:2.9em;}
     #table1 .dt{font-size:10px;white-space:normal;}
+    #table1 tbody td{height:38px;}
   }
 </style>
 </head>
@@ -167,6 +172,19 @@
         <input type="number" id="months" value="3" min="1" max="60" style="width:70px;"> <span>か月以上</span></div>
       <div class="vitem"><span class="vlabel">レベル</span>
         <select id="lvFilter"><option value="">選択してください</option></select></div>
+      <div class="vitem"><span class="vlabel">ランプ</span>
+        <select id="lampFilter">
+          <option value="">すべて</option>
+          <option>FULLCOMBO CLEAR</option><option>EX HARD CLEAR</option><option>HARD CLEAR</option>
+          <option>CLEAR</option><option>EASY CLEAR</option><option>ASSIST CLEAR</option>
+          <option>FAILED</option><option>NO PLAY</option>
+        </select></div>
+      <div class="vitem"><span class="vlabel">DJレベル</span>
+        <select id="djFilter">
+          <option value="">すべて</option>
+          <option>AAA</option><option>AA</option><option>A</option><option>B</option>
+          <option>C</option><option>D</option><option>E</option><option>F</option>
+        </select></div>
       <div class="vitem"><span class="vlabel"></span>
         <label class="checkline"><input type="checkbox" id="inclCurNoPlay">今作未プレーの譜面も表示</label></div>
       <div class="vitem"><span class="vlabel"></span>
@@ -187,6 +205,7 @@
       <table id="table1">
         <thead><tr>
           <th data-k="days">経過日数</th><th data-k="title">タイトル</th>
+          <th data-k="djlevel">DJレベル</th>
           <th data-k="plays">回数</th><th data-k="last">最終プレー日時</th>
         </tr></thead>
         <tbody></tbody>
@@ -222,6 +241,18 @@
     <div class="vstack">
       <div class="vitem"><span class="vlabel">レベル</span>
         <select id="lvFilter2"><option value="">選択してください</option></select></div>
+      <div class="vitem"><span class="vlabel">今作DJレベル</span>
+        <select id="djFilterCur">
+          <option value="">すべて</option>
+          <option>AAA</option><option>AA</option><option>A</option><option>B</option>
+          <option>C</option><option>D</option><option>E</option><option>F</option>
+        </select></div>
+      <div class="vitem"><span class="vlabel">過去ベスト<br class="mbr">DJレベル</span>
+        <select id="djFilterPast">
+          <option value="">すべて</option>
+          <option>AAA</option><option>AA</option><option>A</option><option>B</option>
+          <option>C</option><option>D</option><option>E</option><option>F</option>
+        </select></div>
       <div class="vitem"><span class="vlabel"></span>
         <label class="checkline"><input type="checkbox" id="includeUnplayed">現行スコア0（未プレー）の譜面も表示</label></div>
     </div>
@@ -233,7 +264,7 @@
     <div class="tablewrap">
       <table id="table2">
         <thead><tr>
-          <th>タイトル</th><th>難易度</th><th>現行スコア</th><th>過去ベスト</th><th>差</th><th>過去ファイル</th>
+          <th>タイトル</th><th>現行スコア</th><th>過去ベスト</th><th>差</th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -244,11 +275,13 @@
 <script>
 "use strict";
 const DIFFS = ["BEGINNER","NORMAL","HYPER","ANOTHER","LEGGENDARIA"];
+/* 難易度カラー: B=黄緑 N=水色 H=黄 A=赤 L=紫 */
+const DIFF_COLORS=["#9BDB4D","#5EEAFF","#FFD948","#FF5252","#C77DFF"];
 
-/* レベル選択肢 ☆1〜☆12 */
+/* レベル選択肢 ☆12〜☆1 */
 ["lvFilter","lvFilter2"].forEach(id=>{
   const sel=document.getElementById(id);
-  for(let i=1;i<=12;i++){
+  for(let i=12;i>=1;i--){
     const o=document.createElement("option");
     o.value=i; o.textContent="☆"+i;
     sel.appendChild(o);
@@ -338,6 +371,8 @@ document.getElementById("pasteBtn1").addEventListener("click",()=>{
 });
 document.getElementById("months").addEventListener("input",applyFilter);
 document.getElementById("lvFilter").addEventListener("change",applyFilter);
+document.getElementById("lampFilter").addEventListener("change",applyFilter);
+document.getElementById("djFilter").addEventListener("change",applyFilter);
 document.getElementById("inclCurNoPlay").addEventListener("change",applyFilter);
 document.getElementById("inclNoPlay").addEventListener("change",applyFilter);
 
@@ -354,6 +389,8 @@ function applyFilter(){
   }
   const inclCur = document.getElementById("inclCurNoPlay").checked;
   const inclNP = document.getElementById("inclNoPlay").checked;
+  const lampSel = document.getElementById("lampFilter").value;
+  const djSel = document.getElementById("djFilter").value;
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth()-months);
   filtered = allSongs.filter(s=>{
@@ -361,12 +398,19 @@ function applyFilter(){
     if(s.last > cutoff) return false;
     /* 基本: 選択レベルの譜面にスコアが付いている曲
        今作未プレー: ランプがNO PLAYでないがスコア0（過去作でのみプレー）
-       未プレー: ランプがNO PLAY */
-    if(!s.charts.some(c=>c.level===lv && (
-        c.score>0 ||
-        (inclCur && c.clear!=="NO PLAY" && c.score===0) ||
-        (inclNP && c.clear==="NO PLAY")
-      ))) return false;
+       未プレー: ランプがNO PLAY
+       ランプ・DJレベルの指定があれば同じ譜面で判定 */
+    const mi = s.charts.findIndex(c=>
+      c.level===lv &&
+      (c.score>0 ||
+       (inclCur && c.clear!=="NO PLAY" && c.score===0) ||
+       (inclNP && c.clear==="NO PLAY")) &&
+      (!lampSel || c.clear===lampSel) &&
+      (!djSel || c.djlevel===djSel)
+    );
+    if(mi<0) return false;
+    s._m = s.charts[mi];
+    s._mi = mi;
     return true;
   });
   renderTable1();
@@ -384,17 +428,7 @@ const LAMP_COLORS={
   "NO PLAY":"#ffffff"
 };
 const LAMP_RANK=["NO PLAY","FAILED","ASSIST CLEAR","EASY CLEAR","CLEAR","HARD CLEAR","EX HARD CLEAR","FULLCOMBO CLEAR"];
-/* 曲のランプ: レベル指定時はそのレベルの譜面、未指定時は全譜面中のベストランプ */
-function songLamp(s){
-  const lv = parseInt(document.getElementById("lvFilter").value)||0;
-  let best="NO PLAY";
-  for(const c of s.charts){
-    if(c.level===0) continue;
-    if(lv && c.level!==lv) continue;
-    if(LAMP_RANK.indexOf(c.clear) > LAMP_RANK.indexOf(best)) best=c.clear;
-  }
-  return best;
-}
+const DJ_RANK=["---","F","E","D","C","B","A","AA","AAA"];
 
 function renderTable1(){
   const tb=document.querySelector("#table1 tbody");
@@ -403,26 +437,26 @@ function renderTable1(){
     switch(sortKey){
       case "plays": va=a.plays;vb=b.plays;break;
       case "days": case "last": va=a.last;vb=b.last;break;
-      case "lamp": va=LAMP_RANK.indexOf(songLamp(a));vb=LAMP_RANK.indexOf(songLamp(b));break;
+      case "lamp": va=LAMP_RANK.indexOf(a._m.clear);vb=LAMP_RANK.indexOf(b._m.clear);break;
+      case "djlevel": va=DJ_RANK.indexOf(a._m.djlevel);vb=DJ_RANK.indexOf(b._m.djlevel);break;
       default: va=a[sortKey];vb=b[sortKey];
     }
     if(va<vb)return sortAsc?-1:1;
     if(va>vb)return sortAsc?1:-1;
     return 0;
   });
-  const selLv = parseInt(document.getElementById("lvFilter").value)||0;
   tb.innerHTML = arr.map(s=>{
     const d=daysAgo(s.last);
     const cls = d>=270?"old":(d>=180?"mid":"");
-    const lamp = songLamp(s);
-    const lampColor = LAMP_COLORS[lamp]||"#ffffff";
-    const cs = s.charts.filter(c=>c.level===selLv);
+    const m = s._m;
+    const lampColor = LAMP_COLORS[m.clear]||"#ffffff";
     let daysCell;
-    if(cs.some(c=>c.score>0)) daysCell = `<td class="${cls}">${d}日前</td>`;
-    else if(cs.some(c=>c.clear!=="NO PLAY")) daysCell = `<td class="npdays">今作未プレー</td>`;
-    else daysCell = `<td class="npdays">未プレー</td>`;
+    if(m.score>0) daysCell = `<td class="${cls}">${d}日前</td>`;
+    else if(m.clear!=="NO PLAY") daysCell = `<td class="npdays">今作未</td>`;
+    else daysCell = `<td class="npdays">未</td>`;
     return `<tr>${daysCell}
-      <td class="ttl"><span class="lampbar" style="background:${lampColor}" title="${escapeHtml(lamp)}"></span>${escapeHtml(s.title)}</td>
+      <td class="ttl"><span class="lvnum" style="color:${DIFF_COLORS[s._mi]||'#fff'}">${m.level}</span><span class="lampbar" style="background:${lampColor}" title="${escapeHtml(m.clear)}"></span>${escapeHtml(s.title)}</td>
+      <td>${m.score>0?`<span class="djsm">${escapeHtml(m.djlevel||"---")}</span><br><span class="scsm">${m.score}</span>`:"---"}</td>
       <td>${s.plays}</td><td class="dt">${escapeHtml(s.lastStr)}</td></tr>`;
   }).join("");
   document.getElementById("count1").innerHTML =
@@ -522,37 +556,47 @@ function runCompare(){
     return;
   }
   const includeUnplayed = document.getElementById("includeUnplayed").checked;
+  const curDjSel = document.getElementById("djFilterCur").value;
+  const pastDjSel = document.getElementById("djFilterPast").value;
   const rows=[];
   for(const s of curSongs){
     for(let d=0;d<5;d++){
       const cur = s.charts[d];
       if(cur.level===0) continue;
       if(lv2 && cur.level!==lv2) continue;
-      let best=0, bestFile="";
+      if(curDjSel && cur.djlevel!==curDjSel) continue;
+      let best=0, bestFile="", bestDj="---";
       for(const p of pastData){
         const ps = p.map.get(s.title);
         if(!ps) continue;
         const sc = ps.charts[d].score;
-        if(sc>best){best=sc;bestFile=p.name;}
+        if(sc>best){best=sc;bestFile=p.name;bestDj=ps.charts[d].djlevel;}
       }
       if(best===0) continue;
+      if(pastDjSel && bestDj!==pastDjSel) continue;
       if(cur.score < best && (cur.score>0 || includeUnplayed)){
-        rows.push({title:s.title, diff:DIFFS[d][0], lv:cur.level, lamp:cur.clear,
-                   cur:cur.score, best, diffN:cur.score-best, file:bestFile});
+        rows.push({title:s.title, di:d, lv:cur.level, lamp:cur.clear,
+                   curDj:cur.djlevel, pastDj:bestDj,
+                   cur:cur.score, best, diffN:cur.score-best});
       }
     }
   }
   rows.sort((a,b)=>a.diffN-b.diffN);
   const tb=document.querySelector("#table2 tbody");
-  tb.innerHTML = rows.map(r=>
-    `<tr><td class="ttl"><span class="lampbar" style="background:${LAMP_COLORS[r.lamp]||'#ffffff'}" title="${escapeHtml(r.lamp)}"></span>${escapeHtml(r.title)}</td><td>${r.diff}</td>
-     <td>${r.cur===0?'<span class="badge">未プレー</span>':r.cur}</td>
-     <td>${r.best}</td><td class="down">${r.diffN}</td><td>${escapeHtml(r.file)}</td></tr>`
-  ).join("");
+  tb.innerHTML = rows.map(r=>{
+    const curCell = r.cur===0
+      ? '<span class="badge">未プレー</span>'
+      : `<span class="djsm">${escapeHtml(r.curDj||"---")}</span><br><span class="scsm">${r.cur}</span>`;
+    return `<tr><td class="ttl"><span class="lvnum" style="color:${DIFF_COLORS[r.di]||'#fff'}">${r.lv}</span><span class="lampbar" style="background:${LAMP_COLORS[r.lamp]||'#ffffff'}" title="${escapeHtml(r.lamp)}"></span>${escapeHtml(r.title)}</td>
+     <td>${curCell}</td>
+     <td><span class="djsm">${escapeHtml(r.pastDj||"---")}</span><br><span class="scsm">${r.best}</span></td><td class="down">${r.diffN}</td></tr>`;
+  }).join("");
   document.getElementById("count2").innerHTML =
     `スコアが下がっている譜面: <b>${rows.length}</b> 件`;
 }
 document.getElementById("lvFilter2").addEventListener("change",runCompare);
+document.getElementById("djFilterCur").addEventListener("change",runCompare);
+document.getElementById("djFilterPast").addEventListener("change",runCompare);
 document.getElementById("includeUnplayed").addEventListener("change",runCompare);
 
 function escapeHtml(s){
