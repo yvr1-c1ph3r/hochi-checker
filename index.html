@@ -437,17 +437,16 @@ function applyFilter(){
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth()-months);
   filtered = allSongs.filter(s=>{
-    if(!s.last || isNaN(s.last)) return false;
-    if(s.last > cutoff) return false;
-    /* 基本: 選択レベルの譜面にスコアが付いている曲
-       今作未プレー: ランプがNO PLAYでないがスコア0（過去作でのみプレー）
-       未プレー: ランプがNO PLAY
+    const dateOK = s.last && !isNaN(s.last) && s.last <= cutoff;
+    /* 基本: 選択レベルの譜面にスコアが付いている曲（経過期間の条件あり）
+       今作未プレー: ランプがNO PLAYでないがスコア0（経過期間の条件あり）
+       未プレー: ランプがNO PLAYの譜面すべて（最終プレー日時は参照しない）
        ランプ・DJレベルの指定があれば同じ譜面で判定 */
     const mi = s.charts.findIndex(c=>
       c.level===lv &&
-      (c.score>0 ||
-       (inclCur && c.clear!=="NO PLAY" && c.score===0) ||
-       (inclNP && c.clear==="NO PLAY")) &&
+      ((c.score>0 && dateOK) ||
+       (inclCur && c.clear!=="NO PLAY" && c.score===0 && dateOK) ||
+       (inclNP && c.clear==="NO PLAY" && c.score===0)) &&
       (!lampSel || c.clear===lampSel) &&
       (!djSel || c.djlevel===djSel)
     );
@@ -489,6 +488,9 @@ function lampStyle(name){
 }
 const LAMP_RANK=["NO PLAY","FAILED","ASSIST CLEAR","EASY CLEAR","CLEAR","HARD CLEAR","EX HARD CLEAR","FULLCOMBO CLEAR"];
 const DJ_RANK=["---","F","E","D","C","B","A","AA","AAA"];
+/* 表示優先度: 0=未プレー → 1=今作未プレー → 2=スコアあり
+   ※スコアが付いていればランプがNO PLAYでも「プレー済み」扱い（段位のみでのプレー等） */
+function chartRank(m){ return m.score>0 ? 2 : (m.clear==="NO PLAY" ? 0 : 1); }
 
 function renderTable1(){
   const tb=document.querySelector("#table1 tbody");
@@ -496,7 +498,13 @@ function renderTable1(){
     let va,vb;
     switch(sortKey){
       case "plays": va=a.plays;vb=b.plays;break;
-      case "days": case "last": va=a.last;vb=b.last;break;
+      case "days": case "last": {
+        /* 未プレー → 今作未プレー → 経過日数の長い順 */
+        const ra=chartRank(a._m), rb=chartRank(b._m);
+        if(ra!==rb){ va=ra; vb=rb; }
+        else { va=a.last; vb=b.last; }
+        break;
+      }
       case "lamp": va=LAMP_RANK.indexOf(a._m.clear);vb=LAMP_RANK.indexOf(b._m.clear);break;
       case "djlevel": va=DJ_RANK.indexOf(a._m.djlevel);vb=DJ_RANK.indexOf(b._m.djlevel);break;
       default: va=a[sortKey];vb=b[sortKey];
@@ -516,7 +524,7 @@ function renderTable1(){
     return `<tr>${daysCell}
       <td class="ttl"><span class="lvnum" style="color:${diffColor(s._mi)}">${m.level}</span><span class="lampbar" style="${lampStyle(m.clear)}" title="${escapeHtml(m.clear)}"></span>${escapeHtml(s.title)}</td>
       <td>${m.score>0?`<span class="djsm">${escapeHtml(m.djlevel||"---")}</span><br><span class="scsm">${m.score}</span>`:"---"}</td>
-      <td class="dt">${escapeHtml(s.lastStr)}</td></tr>`;
+      <td class="dt">${chartRank(m)===2?escapeHtml(s.lastStr):"---"}</td></tr>`;
   }).join("");
   document.getElementById("count1").innerHTML =
     `該当曲: <b>${filtered.length}</b> 曲 / 全 ${allSongs.length} 曲`;
