@@ -28,9 +28,9 @@
        display:flex;align-items:center;justify-content:space-between;gap:12px;}
   .themetoggle{cursor:pointer;background:var(--panel2);border:1px solid var(--border);
        border-radius:999px;padding:6px 14px;font-size:15px;user-select:none;flex-shrink:0;}
-  .themetoggle .ic{opacity:.35;}
-  .themetoggle .ic.on{opacity:1;}
-  .themetoggle .tsep{color:var(--sub);margin:0 4px;}
+  .themetoggle .ic{display:none;}
+  .themetoggle .ic.on{display:inline;}
+  .themetoggle .tsep{display:none;}
   header h1{margin:0;font-size:20px;letter-spacing:1px;}
   header h1 span{color:var(--accent);}
   .tabs{display:flex;gap:4px;padding:12px 24px 0;}
@@ -683,8 +683,9 @@ function setTheme(t,save){
   if(save){ try{ localStorage.setItem(THEME_KEY,t); }catch(e){} }
   const mc=document.querySelector('meta[name="theme-color"]');
   if(mc) mc.setAttribute("content", t==="light" ? "#f2f4fa" : "#0d0f1a");
-  document.getElementById("tgSun").classList.toggle("on", t==="light");
-  document.getElementById("tgMoon").classList.toggle("on", t!=="light");
+  /* ダーク時は☀️のみ、ライト時は🌙のみ表示（押すと切り替わる先を示す） */
+  document.getElementById("tgSun").classList.toggle("on", t!=="light");
+  document.getElementById("tgMoon").classList.toggle("on", t==="light");
   /* ランプ・難易度色を新テーマで描き直す */
   if(allSongs.length) applyFilter();
   runCompare();
