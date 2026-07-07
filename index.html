@@ -462,7 +462,7 @@ function daysAgo(d){ return Math.floor((Date.now()-d.getTime())/86400000); }
 const LAMP_COLORS={
   "FULLCOMBO CLEAR":"#f9c",
   "EX HARD CLEAR":"#FFE375",
-  "HARD CLEAR":"#DD5454",
+  "HARD CLEAR":"#ffffff",
   "CLEAR":"#5EEAFF",
   "EASY CLEAR":"#BDFF7C",
   "ASSIST CLEAR":"#9474DD",
@@ -473,7 +473,7 @@ const LAMP_COLORS={
 const LAMP_COLORS_LIGHT={
   "FULLCOMBO CLEAR":"#FF66B2",
   "EX HARD CLEAR":"#D4A017",
-  "HARD CLEAR":"#DD5454",
+  "HARD CLEAR":"#ffffff",
   "CLEAR":"#21A9D8",
   "EASY CLEAR":"#6FBF3A",
   "ASSIST CLEAR":"#9474DD",
@@ -481,9 +481,12 @@ const LAMP_COLORS_LIGHT={
   "NO PLAY":"#ffffff"
 };
 function lampStyle(name){
+  /* NO PLAY(未プレー)はランプ自体を表示しない */
+  if(name==="NO PLAY") return "display:none";
   const c=(isLight()?LAMP_COLORS_LIGHT:LAMP_COLORS)[name]||"#ffffff";
   let s="background:"+c;
-  if(name==="NO PLAY" && isLight()) s+=";border:1px solid #9aa0b8";
+  /* 白いランプ(HARD CLEAR)はライトモードの白背景に埋もれるため枠線を付ける */
+  if(name==="HARD CLEAR" && isLight()) s+=";border:1px solid #9aa0b8";
   return s;
 }
 const LAMP_RANK=["NO PLAY","FAILED","ASSIST CLEAR","EASY CLEAR","CLEAR","HARD CLEAR","EX HARD CLEAR","FULLCOMBO CLEAR"];
