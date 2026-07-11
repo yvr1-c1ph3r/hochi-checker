@@ -90,6 +90,7 @@
   .badge.hit{border-color:var(--accent);color:var(--accent);font-weight:bold;}
   .down{color:var(--accent2);font-weight:bold;}
   .checkline{font-size:13px;color:var(--sub);display:flex;align-items:center;gap:6px;}
+  .diffchecks{display:flex;flex-wrap:wrap;gap:4px 14px;}
   h3{margin:4px 0 12px;font-size:15px;color:var(--accent);}
   .hint{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.6;}
   .vstack{display:flex;flex-direction:column;gap:12px;margin-top:16px;align-items:flex-start;}
@@ -191,6 +192,14 @@
         <input type="number" id="months" value="3" min="1" max="60" style="width:70px;"> <span>か月以上</span></div>
       <div class="vitem"><span class="vlabel">レベル</span>
         <select id="lvFilter"><option value="">選択してください</option></select></div>
+      <div class="vitem"><span class="vlabel">難易度</span>
+        <span class="diffchecks" id="diffChecks1">
+          <label class="checkline"><input type="checkbox" class="diffChk" data-i="0" checked>B</label>
+          <label class="checkline"><input type="checkbox" class="diffChk" data-i="1" checked>N</label>
+          <label class="checkline"><input type="checkbox" class="diffChk" data-i="2" checked>H</label>
+          <label class="checkline"><input type="checkbox" class="diffChk" data-i="3" checked>A</label>
+          <label class="checkline"><input type="checkbox" class="diffChk" data-i="4" checked>L</label>
+        </span></div>
       <div class="vitem"><span class="vlabel">ランプ</span>
         <select id="lampFilter">
           <option value="">すべて</option>
@@ -418,6 +427,13 @@ document.getElementById("lampFilter").addEventListener("change",applyFilter);
 document.getElementById("djFilter").addEventListener("change",applyFilter);
 document.getElementById("inclCurNoPlay").addEventListener("change",applyFilter);
 document.getElementById("inclNoPlay").addEventListener("change",applyFilter);
+document.querySelectorAll("#diffChecks1 .diffChk").forEach(cb=>{
+  cb.addEventListener("change",applyFilter);
+});
+function selectedDiffs(){
+  return new Set([...document.querySelectorAll("#diffChecks1 .diffChk")]
+    .filter(cb=>cb.checked).map(cb=>parseInt(cb.dataset.i)));
+}
 
 function applyFilter(){
   if(!allSongs.length)return;
@@ -434,6 +450,7 @@ function applyFilter(){
   const inclNP = document.getElementById("inclNoPlay").checked;
   const lampSel = document.getElementById("lampFilter").value;
   const djSel = document.getElementById("djFilter").value;
+  const diffSel = selectedDiffs();
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth()-months);
   filtered = allSongs.filter(s=>{
@@ -441,9 +458,11 @@ function applyFilter(){
     /* 基本: 選択レベルの譜面にスコアが付いている曲（経過期間の条件あり）
        今作未プレー: ランプがNO PLAYでないがスコア0（経過期間の条件あり）
        未プレー: ランプがNO PLAYの譜面すべて（最終プレー日時は参照しない）
-       ランプ・DJレベルの指定があれば同じ譜面で判定 */
-    const mi = s.charts.findIndex(c=>
+       ランプ・DJレベルの指定があれば同じ譜面で判定
+       難易度(B/N/H/A/L)チェックで対象の譜面種別を絞り込み */
+    const mi = s.charts.findIndex((c,i)=>
       c.level===lv &&
+      diffSel.has(i) &&
       ((c.score>0 && dateOK) ||
        (inclCur && c.clear!=="NO PLAY" && c.score===0 && dateOK) ||
        (inclNP && c.clear==="NO PLAY" && c.score===0)) &&
@@ -542,25 +561,35 @@ document.querySelectorAll("#table1 th").forEach(th=>{
 
 document.getElementById("randomBtn").addEventListener("click",()=>{
   const selLv = parseInt(document.getElementById("lvFilter").value)||0;
-  // スコアが付いている譜面を持つ曲のみ対象（レベル指定時はそのレベルの譜面にスコアがあること）
-  const pool = filtered.filter(s =>
-    selLv ? s.charts.some(c=>c.level===selLv && c.score>0)
-          : s.charts.some(c=>c.score>0)
-  );
-  if(!pool.length){alert("スコアが付いている該当曲がありません");return;}
+  // 該当曲一覧(filtered)に表示されている曲すべて（未プレー・今作未プレーを含む）からランダム抽選
+  const pool = [...filtered];
+  if(!pool.length){alert("該当曲がありません");return;}
   const picks=[];
   for(let i=0;i<4 && pool.length;i++){
     picks.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
   }
   const area=document.getElementById("picks");
   area.innerHTML = picks.map(s=>{
-    const lv = s.charts.map((c,i)=>c.score>0?`<span class="badge${selLv&&c.level===selLv?" hit":""}">${DIFFS[i][0]}${DIFFS[i]==="LEGGENDARIA"?"†":""}☆${c.level} ${c.score}</span>`:"").join("");
+    const lv = s.charts.map((c,i)=>{
+      const isHit = selLv && c.level===selLv;
+      if(c.score>0){
+        return `<span class="badge${isHit?" hit":""}">${DIFFS[i][0]}${DIFFS[i]==="LEGGENDARIA"?"†":""}☆${c.level} ${c.score}</span>`;
+      }
+      if(i===s._mi){
+        const label = c.clear==="NO PLAY" ? "未プレー" : "今作未プレー";
+        return `<span class="badge${isHit?" hit":""}">${DIFFS[i][0]}${DIFFS[i]==="LEGGENDARIA"?"†":""}☆${c.level} ${label}</span>`;
+      }
+      return "";
+    }).join("");
+    const dateLine = chartRank(s._m)===2
+      ? `最終プレー: ${escapeHtml(s.lastStr)}（${daysAgo(s.last)}日前）`
+      : (s._m.clear==="NO PLAY" ? "未プレー" : "今作未プレー");
     return `<div class="pick">
       <div class="t">${escapeHtml(s.title)}</div>
       <div class="g">${escapeHtml(s.genre)} / ${escapeHtml(s.artist)}</div>
       <div class="g" style="margin-top:4px;">${escapeHtml(s.version)}</div>
       <div style="margin-top:6px;">${lv}</div>
-      <div class="d">最終プレー: ${escapeHtml(s.lastStr)}（${daysAgo(s.last)}日前）</div>
+      <div class="d">${dateLine}</div>
     </div>`;
   }).join("");
   document.getElementById("pickArea").style.display="block";
