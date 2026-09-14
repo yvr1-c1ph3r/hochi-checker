@@ -2,744 +2,734 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IIDX 放置曲チェッカー（非公式ファンツール）</title>
-<meta name="description" content="beatmania IIDXのプレーデータCSVから、最近プレーしていない曲の抽出・ランダム選曲・バージョン間スコア比較ができる非公式ファンツールです。データはブラウザ内でのみ処理されます。">
-<meta name="theme-color" content="#0d0f1a">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>beatmania IIDX 放置曲チェッカー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg:#0d0f1a; --panel:#171a2b; --panel2:#1f2340; --border:#2e3560;
-    --text:#e8eaf6; --sub:#9aa0c3; --accent:#00d4ff; --accent2:#ff4d8d; --ok:#57e389; --warn:#ffcc44;
+:root{
+  --bg:#ffffff; --card:#F2F2F2; --surface:#ffffff;
+  --text:#1f2937; --text-mid:rgba(31,41,55,.6);
+  --accent:#33507a; --accent-hover:#264062; --on-accent:#ffffff;
+  --accent-light:rgba(51,80,122,.1); --accent-light-hover:rgba(51,80,122,.18);
+  --border:#e8e8e8;
+  --th-bg:#5a5e66; --th-text:#ffffff;
+  --tab-active:#4682b4; --tab-inactive:#A6A3A3; --tab-text:#ffffff;
+  --danger:#dc2626; --warn:#d97706;
+  --btn-ghost-bg:#eeeeee; --btn-ghost-bg-hover:#e2e2e2;
+  --diff-b:#5FA82E; --diff-n:#1E9FBF; --diff-h:#D4A017; --diff-a:#E03131; --diff-l:#9A4DE0;
+  --lamp-fc:#FF66B2; --lamp-exh:#D4A017; --lamp-hard:#ffffff; --lamp-hard-border:#9aa0b8;
+  --lamp-clear:#21A9D8; --lamp-easy:#6FBF3A; --lamp-assist:#9474DD; --lamp-failed:#A9A9A9;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#14161d; --card:#262b38; --surface:#1a1d26;
+    --text:#e5e7eb; --text-mid:rgba(229,231,235,.6);
+    --accent:#7ea6d9; --accent-hover:#9cbce6; --on-accent:#0f1720;
+    --accent-light:rgba(126,166,217,.26); --accent-light-hover:rgba(126,166,217,.38);
+    --border:rgba(255,255,255,.1);
+    --th-bg:#1a1d26; --th-text:#e5e7eb;
+    --tab-active:#5b8ac0; --tab-inactive:#3a3f4b; --tab-text:#e5e7eb;
+    --danger:#f87171; --warn:#fbbf24;
+    --btn-ghost-bg:#3d4250; --btn-ghost-bg-hover:#4c5262;
+    --diff-b:#7ecb52; --diff-n:#3ec3f0; --diff-h:#e8b93a; --diff-a:#f2695f; --diff-l:#b183ea;
+    --lamp-fc:#ff8fc4; --lamp-exh:#e8b93a; --lamp-hard:#e5e7eb; --lamp-hard-border:transparent;
+    --lamp-clear:#3ec3f0; --lamp-easy:#8ad84f; --lamp-assist:#b399e8; --lamp-failed:#8b8f98;
   }
-  html[data-theme="light"]{
-    --bg:#f2f4fa; --panel:#ffffff; --panel2:#e9edf7; --border:#c6cee6;
-    --text:#1d2436; --sub:#5b6484; --accent:#0d7fb8; --accent2:#d63384; --ok:#2f9e4f; --warn:#b8860b;
-  }
-  html[data-theme="light"] header{background:linear-gradient(90deg,#e3e9ff,#efe4ff);}
-  html[data-theme="light"] td{border-bottom:1px solid #e2e6f2;}
-  html[data-theme="light"] tr:hover td{background:#eef1fb;}
-  html[data-theme="light"] label.filelabel:hover{background:#dfe6f8;}
-  html[data-theme="light"] .pick{background:linear-gradient(135deg,#efe9ff,#e3f1ff);}
-  *{box-sizing:border-box;}
-  body{margin:0;font-family:"Segoe UI","Hiragino Sans","Meiryo",sans-serif;background:var(--bg);color:var(--text);}
-  header{padding:18px 24px;background:linear-gradient(90deg,#101328,#1a1040);border-bottom:2px solid var(--accent);
-       display:flex;align-items:center;justify-content:space-between;gap:12px;}
-  .themetoggle{cursor:pointer;background:var(--panel2);border:1px solid var(--border);
-       border-radius:999px;padding:6px 14px;font-size:15px;user-select:none;flex-shrink:0;}
-  .themetoggle .ic{display:none;}
-  .themetoggle .ic.on{display:inline;}
-  .themetoggle .tsep{display:none;}
-  header h1{margin:0;font-size:20px;letter-spacing:1px;}
-  header h1 span{color:var(--accent);}
-  .tabs{display:flex;gap:4px;padding:12px 24px 0;}
-  .tab{padding:10px 20px;background:var(--panel);border:1px solid var(--border);border-bottom:none;
-       border-radius:8px 8px 0 0;cursor:pointer;color:var(--sub);font-size:14px;}
-  .tab.active{background:var(--panel2);color:var(--text);border-color:var(--accent);font-weight:bold;}
-  .page{display:none;padding:20px 24px 60px;}
-  .page.active{display:block;}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;}
-  .row{display:flex;flex-wrap:wrap;gap:14px;align-items:center;}
-  label.filelabel{display:inline-block;padding:9px 16px;background:var(--panel2);border:1px dashed var(--accent);
-       border-radius:8px;cursor:pointer;font-size:13px;}
-  label.filelabel:hover{background:#252a52;}
-  input[type=file]{display:none;}
-  select,input[type=number]{background:var(--panel2);color:var(--text);border:1px solid var(--border);
-       border-radius:6px;padding:7px 10px;font-size:14px;}
-  button{background:linear-gradient(90deg,var(--accent2),#ff7ab0);border:none;color:#fff;padding:10px 22px;
-       border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;}
-  button:disabled{opacity:.35;cursor:default;}
-  button.secondary{background:var(--panel2);border:1px solid var(--border);font-weight:normal;color:var(--text);}
-  .status{font-size:13px;color:var(--sub);}
-  .count{font-size:15px;margin:8px 0;}
-  .count b{color:var(--accent);font-size:20px;}
-  table{width:100%;border-collapse:collapse;font-size:13px;}
-  th{background:var(--panel2);color:var(--accent);text-align:center;padding:8px;border-bottom:2px solid var(--border);
-     position:sticky;top:0;z-index:2;cursor:pointer;white-space:nowrap;}
-  td{padding:7px 8px;border-bottom:1px solid #232848;text-align:center;}
-  tr:hover td{background:#1c2140;}
-  .tablewrap{max-height:520px;overflow-y:auto;overflow-x:hidden;border:1px solid var(--border);border-radius:8px;}
-  #table1{table-layout:fixed;width:100%;}
-  #table1 th:nth-child(1){width:80px;}
-  #table1 th:nth-child(3){width:72px;}
-  #table1 th:nth-child(4){width:126px;}
-  #table1 td{word-break:break-word;overflow-wrap:anywhere;}
-  #table1 tbody td{height:44px;}
-  #table1 .dt{color:var(--sub);}
-  #table2{table-layout:fixed;width:100%;}
-  #table2 th:nth-child(2){width:90px;}
-  #table2 th:nth-child(3){width:90px;}
-  #table2 th:nth-child(4){width:70px;}
-  #table2 td{word-break:break-word;overflow-wrap:anywhere;}
-  #table1 td.ttl,#table2 td.ttl{text-align:left;position:relative;padding-left:4.7em;}
-  td.ttl .lvnum{position:absolute;left:.3em;top:50%;transform:translateY(-50%);width:1.4em;text-align:right;font-weight:bold;font-size:1.4em;white-space:nowrap;}
-  td.ttl .lampbar{position:absolute;left:3.3em;top:15%;height:70%;width:.35em;border-radius:2px;}
-  .old{color:var(--accent2);font-weight:bold;}
-  .mid{color:var(--warn);}
-  .npdays{color:var(--sub);font-size:11px;}
-  .djsm{color:var(--text);font-weight:bold;}
-  .scsm{font-size:11px;}
-  .picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px;}
-  .pick{background:linear-gradient(135deg,#241b4d,#12305a);border:1px solid var(--accent);border-radius:10px;padding:14px;}
-  .pick .t{font-size:16px;font-weight:bold;margin-bottom:4px;}
-  .pick .g{font-size:12px;color:var(--sub);}
-  .pick .d{font-size:12px;margin-top:8px;color:var(--warn);}
-  .badge{display:inline-block;background:var(--panel2);border:1px solid var(--border);border-radius:4px;
-       padding:1px 7px;font-size:11px;margin-right:4px;color:var(--sub);}
-  .badge.hit{border-color:var(--accent);color:var(--accent);font-weight:bold;}
-  .down{color:var(--accent2);font-weight:bold;}
-  .checkline{font-size:13px;color:var(--sub);display:flex;align-items:center;gap:6px;}
-  .diffchecks{display:flex;flex-wrap:wrap;gap:4px 14px;}
-  h3{margin:4px 0 12px;font-size:15px;color:var(--accent);}
-  .hint{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.6;}
-  .vstack{display:flex;flex-direction:column;gap:12px;margin-top:16px;align-items:flex-start;}
-  .vitem{display:flex;align-items:center;gap:10px;}
-  .vlabel{display:inline-block;width:130px;font-size:13px;color:var(--sub);flex-shrink:0;}
-  .vlabel br.mbr{display:none;}
-  @media (max-width:640px){
-    .vlabel{width:96px;font-size:12px;}
-    .vlabel br.mbr{display:block;}
-    .vitem button{width:calc(100vw - 160px);max-width:280px;}
-  }
-  .usage-wrap{padding:14px 24px 0;}
-  .usage{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13px;}
-  .usage summary{cursor:pointer;color:var(--accent);user-select:none;font-weight:bold;}
-  .usage p{color:var(--sub);line-height:1.8;margin:10px 0 0;}
-  .usage b{color:var(--text);}
-  .usage a{color:var(--accent);}
-  footer{padding:20px 24px 40px;font-size:11px;color:var(--sub);line-height:1.8;
-       border-top:1px solid var(--border);margin-top:10px;}
-  @media (max-width:640px){ .usage-wrap{padding:10px 10px 0;} footer{padding:16px 14px 30px;} }
-  details.pastebox{margin-top:10px;width:100%;}
-  details.pastebox summary{cursor:pointer;font-size:13px;color:var(--accent);user-select:none;}
-  details.pastebox .hint a{color:var(--accent);}
-  details.pastebox textarea{width:100%;height:110px;margin-top:8px;background:var(--panel2);
-       color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;
-       font-size:12px;font-family:monospace;resize:vertical;}
-  details.pastebox button{margin-top:6px;}
-  @media (max-width:640px){
-    header{padding:12px 14px;} header h1{font-size:16px;}
-    .tabs{padding:8px 10px 0;gap:6px;}
-    .tab{flex:1 1 0;min-width:0;padding:9px 2px;font-size:11px;text-align:center;
-         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .page{padding:12px 10px 40px;}
-    .card{padding:12px;}
-    .row{gap:8px;font-size:13px;}
-    button{padding:9px 14px;font-size:13px;}
-    table{font-size:11px;} td,th{padding:5px 4px;}
-    .tablewrap{max-height:60vh;}
-    #table1 th,#table2 th{white-space:normal;line-height:1.3;vertical-align:middle;}
-    #table1 th:nth-child(1){width:48px;}
-    #table1 th:nth-child(3){width:40px;}
-    #table1 th:nth-child(4){width:68px;}
-    #table2 th:nth-child(2){width:52px;}
-    #table2 th:nth-child(3){width:52px;}
-    #table2 th:nth-child(4){width:42px;}
-    #table1 td.ttl,#table2 td.ttl{padding-left:4.1em;}
-    td.ttl .lvnum{left:.1em;width:1.6em;font-size:1.15em;}
-    td.ttl .lampbar{left:2.9em;}
-    #table1 .dt{font-size:10px;white-space:normal;}
-    #table1 tbody td{height:38px;}
-  }
+}
+:root[data-theme="dark"]{
+  --bg:#14161d; --card:#262b38; --surface:#1a1d26;
+  --text:#e5e7eb; --text-mid:rgba(229,231,235,.6);
+  --accent:#7ea6d9; --accent-hover:#9cbce6; --on-accent:#0f1720;
+  --accent-light:rgba(126,166,217,.26); --accent-light-hover:rgba(126,166,217,.38);
+  --border:rgba(255,255,255,.1);
+  --th-bg:#1a1d26; --th-text:#e5e7eb;
+  --tab-active:#5b8ac0; --tab-inactive:#3a3f4b; --tab-text:#e5e7eb;
+  --danger:#f87171; --warn:#fbbf24;
+  --btn-ghost-bg:#3d4250; --btn-ghost-bg-hover:#4c5262;
+  --diff-b:#7ecb52; --diff-n:#3ec3f0; --diff-h:#e8b93a; --diff-a:#f2695f; --diff-l:#b183ea;
+  --lamp-fc:#ff8fc4; --lamp-exh:#e8b93a; --lamp-hard:#e5e7eb; --lamp-hard-border:transparent;
+  --lamp-clear:#3ec3f0; --lamp-easy:#8ad84f; --lamp-assist:#b399e8; --lamp-failed:#8b8f98;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-size:15px;font-weight:600;
+  font-family:'Noto Sans JP','Noto Sans',-apple-system,'Hiragino Kaku Gothic ProN',Meiryo,sans-serif;
+  transition:background .2s,color .2s;}
+a{color:var(--accent)}
+a:hover{color:var(--accent-hover)}
+input[type=file]{display:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+th{background:var(--th-bg);color:var(--th-text);text-align:center;padding:11.5px 8px;font-weight:700;
+  position:sticky;top:0;z-index:2;cursor:pointer;white-space:nowrap;border-right:2px solid var(--surface)}
+th:last-child{border-right:none}
+td{padding:7px 8px;border-bottom:2px solid var(--card);text-align:center;color:var(--text-mid);font-weight:500;background:var(--surface)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:last-child td:first-child{border-bottom-left-radius:20px}
+tbody tr:last-child td:last-child{border-bottom-right-radius:20px}
+tbody tr:hover td{background:var(--accent-light)}
+#table1 th:nth-child(1){width:80px}
+#table1 th:nth-child(3){width:72px}
+#table1 th:nth-child(4){width:126px}
+#table2 th:nth-child(2){width:90px}
+#table2 th:nth-child(3){width:90px}
+#table2 th:nth-child(4){width:70px}
+td{word-break:break-word;overflow-wrap:anywhere}
+#table1 tbody td{height:44px}
+td.ttl{text-align:left;position:relative;padding-left:4.7em}
+td.ttl .lvnum{position:absolute;left:.3em;top:50%;transform:translateY(-50%);width:1.4em;
+  text-align:right;font-weight:bold;font-size:1.4em;white-space:nowrap}
+td.ttl .lampbar{position:absolute;left:3.3em;top:15%;height:70%;width:.35em;border-radius:2px}
+.old{color:var(--danger);font-weight:bold}
+.mid{color:var(--warn)}
+.npdays{color:var(--text-mid);font-size:11px}
+.djsm{color:var(--text);font-weight:bold}
+.scsm{font-size:11px;color:var(--text-mid)}
+.dt{color:var(--text-mid)}
+.down{color:var(--danger);font-weight:bold}
+.badge{display:inline-block;background:var(--accent-light);border-radius:4px;padding:2px 9px;
+  font-size:12px;margin-right:4px;color:var(--accent);font-weight:700}
+.badge.hit{background:var(--accent);color:var(--on-accent)}
+.btn-ghost{background:var(--btn-ghost-bg);color:var(--text-mid);border:none;padding:10px 22px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+.btn-ghost:hover{background:var(--btn-ghost-bg-hover)}
+.btn-tint{display:inline-block;padding:9px 16px;background:var(--accent-light);color:var(--accent);border-radius:10px;cursor:pointer;font-size:13px;font-weight:700}
+.btn-tint:hover{background:var(--accent-light-hover)}
+.btn-random{background:var(--accent-light);color:var(--accent);border:none;padding:10px 22px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;opacity:.35}
+.btn-random:hover{background:var(--accent-light-hover)}
+.theme-toggle{background:var(--btn-ghost-bg);border:none;border-radius:10px;padding:6px 12px 10px;font-size:18px;line-height:1;cursor:pointer;font-family:inherit;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center}
+.theme-toggle:hover{background:var(--btn-ghost-bg-hover)}
+.page-card-first{border-radius:0 20px 20px 20px}
+.page-card-first.tabs-full{border-top-right-radius:0}
+@media (max-width:640px){
+  table{font-size:11px}
+  td{padding:5px 4px}
+  th{padding:7.2px 4px;white-space:normal;line-height:1.3;vertical-align:middle}
+  #table1 th:nth-child(1){width:48px}
+  #table1 th:nth-child(3){width:40px}
+  #table1 th:nth-child(4){width:68px}
+  #table2 th:nth-child(2){width:52px}
+  #table2 th:nth-child(3){width:52px}
+  #table2 th:nth-child(4){width:42px}
+  td.ttl{padding-left:4.1em}
+  td.ttl .lvnum{left:.1em;width:1.6em;font-size:1.15em}
+  td.ttl .lampbar{left:2.9em}
+  #table1 .dt{font-size:10px;white-space:normal}
+  #table1 tbody td{height:38px}
+  .csv-row{flex-direction:column;align-items:flex-start!important}
+}
 </style>
 </head>
 <body>
-<header>
-  <h1>beatmania IIDX <span>放置曲チェッカー</span></h1>
-  <div class="themetoggle" id="themeToggle" title="ライトモード / ダークモード切り替え">
-    <span class="ic" id="tgSun">☀️</span><span class="tsep">/</span><span class="ic" id="tgMoon">🌙</span>
-  </div>
-</header>
+<div id="iidx">
 
-<div class="usage-wrap">
-  <details class="usage">
-    <summary>📖 使い方・CSVの取得方法</summary>
-    <p><b>① プレーデータCSVを用意する</b><br>
-    KONAMI公式の e-amusement サイト／アプリの beatmania IIDX「プレーデータ」ページから、スコアデータのCSVを取得します（CSVダウンロードには e-amusement ベーシックコース等への加入が必要です）。<br>
-    プレイデータCSVのダウンロードは<a href="https://p.eagate.573.jp/game/2dx/33/djdata/score_download.html?style=SP" target="_blank" rel="noopener">こちら</a>から<br>
-    ・PCの場合: ダウンロードしたCSVファイルを「📂 CSVを選択」で読み込み<br>
-    ・スマホの場合: CSVの内容を全選択してコピーし、「📋 コピペで読み込む」に貼り付け</p>
-    <p><b>② 最近プレーしていない曲</b><br>
-    期間・レベルを選ぶと該当曲が即時に一覧表示されます。「🎲 ランダムで4曲選ぶ」を押すと、その中から今日の課題曲を決められます。</p>
-    <p><b>③ バージョン間スコア比較</b><br>
-    現行バージョンと過去バージョンのCSVを読み込んで比較すると、過去の自己ベストよりスコアが下がっている譜面を洗い出せます。</p>
-    <p>※ 読み込んだデータはすべてお使いの端末（ブラウザ）内で処理・保存され、外部に送信されることはありません。次回アクセス時には前回読み込んだデータが自動で復元されます（🗑ボタンで削除できます）。</p>
-  </details>
-</div>
+  <header style="padding:14px clamp(14px,3vw,24px);background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:5;">
+    <h1 style="margin:0;font-size:clamp(16px,2.4vw,20px);font-weight:700;letter-spacing:.5px;">beatmania IIDX <span style="color:var(--accent);">放置曲チェッカー</span></h1>
+    <button type="button" id="themeToggle" class="theme-toggle" aria-label="ダークモード切り替え" title="ダークモード切り替え">🌙</button>
+  </header>
 
-<div class="tabs">
-  <div class="tab active" data-page="p1">🕒 最近プレーしていない曲</div>
-  <div class="tab" data-page="p2">📉 バージョン間スコア比較</div>
-</div>
-
-<!-- ============ ページ1 ============ -->
-<div class="page active" id="p1">
-  <div class="card">
-    <div class="row">
-      <label class="filelabel">📂 プレーデータCSVを選択<input type="file" id="csv1" accept=".csv,text/csv"></label>
-      <button class="secondary" id="clearSaved1">🗑 保存データをクリア</button>
-      <span class="status" id="status1">未読み込み</span>
-    </div>
-    <details class="pastebox">
-      <summary>📋 コピペで読み込む（スマホ向け）</summary>
-      <div class="hint">プレイデータCSVのダウンロードは<a href="https://p.eagate.573.jp/game/2dx/33/djdata/score_download.html?style=SP" target="_blank" rel="noopener">こちら</a>から</div>
-      <textarea id="paste1" placeholder="公式サイト等でコピーしたCSVの内容をここに貼り付けてください"></textarea>
-      <button class="secondary" id="pasteBtn1">貼り付けた内容を読み込む</button>
+  <div style="padding:clamp(10px,2vw,14px) clamp(10px,3vw,24px) 0;">
+    <details style="background:var(--card);border-radius:20px;padding:16px 20px;font-size:13px;border:2px solid transparent;">
+      <summary style="cursor:pointer;color:var(--accent);user-select:none;font-weight:700;">📖 使い方・CSVの取得方法</summary>
+      <p style="color:var(--text-mid);line-height:1.8;margin:10px 0 0;"><b style="color:var(--text);">① プレーデータCSVを用意する</b><br>
+      KONAMI公式の e-amusement サイト／アプリの beatmania IIDX「プレーデータ」ページから、スコアデータのCSVを取得します（CSVダウンロードには e-amusement ベーシックコース等への加入が必要です）。<br>
+      プレイデータCSVのダウンロードは<a href="https://p.eagate.573.jp/game/2dx/33/djdata/score_download.html?style=SP" target="_blank" rel="noopener" style="font-weight:700;">こちら</a>から<br>
+      ・PCの場合: ダウンロードしたCSVファイルを「📂 CSVを選択」で読み込み<br>
+      ・スマホの場合: CSVの内容を全選択してコピーし、「📋 コピペで読み込む」に貼り付け</p>
+      <p style="color:var(--text-mid);line-height:1.8;margin:10px 0 0;"><b style="color:var(--text);">② 最近プレーしていない曲</b><br>
+      期間・レベルを選ぶと該当曲が即時に一覧表示されます。「🎲 ランダムで4曲選ぶ」を押すと、その中から今日の課題曲を決められます。</p>
+      <p style="color:var(--text-mid);line-height:1.8;margin:10px 0 0;"><b style="color:var(--text);">③ バージョン間スコア比較</b><br>
+      現行バージョンと過去バージョンのCSVを読み込んで比較すると、過去の自己ベストよりスコアが下がっている譜面を洗い出せます。</p>
+      <p style="color:var(--text-mid);line-height:1.8;margin:10px 0 0;">※ 読み込んだデータはすべてお使いの端末（ブラウザ）内で処理・保存され、外部に送信されることはありません。次回アクセス時には前回読み込んだデータが自動で復元されます（🗑ボタンで削除できます）。</p>
     </details>
-    <div class="vstack">
-      <div class="vitem"><span class="vlabel">最終プレーから</span>
-        <input type="number" id="months" value="3" min="1" max="60" style="width:70px;"> <span>か月以上</span></div>
-      <div class="vitem"><span class="vlabel">レベル</span>
-        <select id="lvFilter"><option value="">選択してください</option></select></div>
-      <div class="vitem"><span class="vlabel">難易度</span>
-        <span class="diffchecks" id="diffChecks1">
-          <label class="checkline"><input type="checkbox" class="diffChk" data-i="0" checked>B</label>
-          <label class="checkline"><input type="checkbox" class="diffChk" data-i="1" checked>N</label>
-          <label class="checkline"><input type="checkbox" class="diffChk" data-i="2" checked>H</label>
-          <label class="checkline"><input type="checkbox" class="diffChk" data-i="3" checked>A</label>
-          <label class="checkline"><input type="checkbox" class="diffChk" data-i="4" checked>L</label>
-        </span></div>
-      <div class="vitem"><span class="vlabel">ランプ</span>
-        <select id="lampFilter">
-          <option value="">すべて</option>
-          <option>FULLCOMBO CLEAR</option><option>EX HARD CLEAR</option><option>HARD CLEAR</option>
-          <option>CLEAR</option><option>EASY CLEAR</option><option>ASSIST CLEAR</option>
-          <option>FAILED</option><option>NO PLAY</option>
-        </select></div>
-      <div class="vitem"><span class="vlabel">DJレベル</span>
-        <select id="djFilter">
-          <option value="">すべて</option>
-          <option>AAA</option><option>AA</option><option>A</option><option>B</option>
-          <option>C</option><option>D</option><option>E</option><option>F</option>
-        </select></div>
-      <div class="vitem"><span class="vlabel"></span>
-        <label class="checkline"><input type="checkbox" id="inclCurNoPlay">今作未プレーの譜面も表示</label></div>
-      <div class="vitem"><span class="vlabel"></span>
-        <label class="checkline"><input type="checkbox" id="inclNoPlay">未プレーの譜面も表示</label></div>
-      <div class="vitem"><span class="vlabel"></span>
-        <button id="randomBtn" disabled>🎲 ランダムで4曲選ぶ</button></div>
+  </div>
+
+  <div id="tabsBar" style="display:flex;gap:5px;padding:clamp(8px,2vw,16px) clamp(10px,3vw,24px) 0;">
+    <div data-tab="p1" style="flex:1 1 auto;max-width:320px;padding:10px clamp(4px,2vw,20px);background:var(--tab-active);border:2px solid var(--tab-active);border-radius:14px 14px 0 0;cursor:pointer;color:var(--tab-text);font-size:clamp(11px,1.5vw,14px);font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🕒 最近プレーしていない曲</div>
+    <div data-tab="p2" style="flex:1 1 auto;max-width:320px;padding:10px clamp(4px,2vw,20px);background:var(--tab-inactive);border:2px solid transparent;border-radius:14px 14px 0 0;cursor:pointer;color:var(--tab-text);font-size:clamp(11px,1.5vw,14px);font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📉 バージョン間スコア比較</div>
+  </div>
+
+  <div id="p1" data-page="p1" style="display:block;padding:2px clamp(10px,3vw,24px) 60px;">
+    <div class="page-card-first" style="background:var(--card);padding:clamp(16px,2.2vw,24px) clamp(16px,2.6vw,28px);margin-bottom:20px;border:2px solid transparent;">
+      <div style="background:var(--surface);border-radius:14px;padding:16px;">
+        <div style="font-size:15px;color:var(--text);font-weight:700;">📋 コピペで読み込む</div>
+        <div style="font-size:12px;color:var(--text-mid);margin-top:6px;line-height:1.6;">プレイデータCSVのダウンロードは<a href="https://p.eagate.573.jp/game/2dx/33/djdata/score_download.html?style=SP" target="_blank" rel="noopener" style="font-weight:700;">こちら</a>から</div>
+        <textarea id="paste1" placeholder="公式サイト等でコピーしたCSVの内容をここに貼り付けてください" style="width:100%;height:110px;margin-top:8px;background:var(--surface);color:var(--text);border:2px solid var(--border);border-radius:14px;padding:8px;font-size:12px;font-family:monospace;resize:vertical;"></textarea>
+        <button id="pasteBtn1" class="btn-ghost" style="margin-top:6px;">貼り付けた内容を読み込む</button>
+      </div>
+      <div style="background:var(--surface);border-radius:14px;padding:16px;margin-top:14px;">
+        <div style="font-size:15px;color:var(--text);font-weight:700;">📁 CSVで読み込む</div>
+        <div class="csv-row" style="display:flex;flex-wrap:wrap;gap:clamp(8px,1.4vw,14px);align-items:center;margin-top:6px;">
+          <label class="btn-tint">📂 プレーデータCSVを選択<input type="file" id="csv1" accept=".csv,text/csv"></label>
+          <div style="display:flex;flex-wrap:wrap;gap:clamp(8px,1.4vw,14px);align-items:center;">
+            <button id="clearSaved1" class="btn-ghost">🗑 保存データをクリア</button>
+            <span id="status1" style="font-size:13px;color:var(--text-mid);white-space:nowrap;">未読み込み</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:16px;align-items:flex-start;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-block;width:clamp(96px,13vw,130px);font-size:clamp(12px,1.3vw,13px);color:var(--text-mid);flex-shrink:0;">最終プレーから</span>
+          <input type="number" id="months" value="3" min="1" max="60" style="width:70px;background:var(--surface);color:var(--text);border:2px solid var(--border);border-radius:14px;padding:7px 10px;font-size:14px;font-weight:600;font-family:inherit;">
+          <span>か月以上</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-block;width:clamp(96px,13vw,130px);font-size:clamp(12px,1.3vw,13px);color:var(--text-mid);flex-shrink:0;">レベル</span>
+          <select id="lvFilter" style="background:var(--surface);color:var(--text);border:2px solid var(--border);border-radius:14px;padding:7px 10px;font-size:14px;font-weight:600;font-family:inherit;">
+            <option value="">選択してください</option>
+            <option value="12">☆12</option><option value="11">☆11</option><option value="10">☆10</option>
+            <option value="9">☆9</option><option value="8">☆8</option><option value="7">☆7</option>
+            <option value="6">☆6</option><option value="5">☆5</option><option value="4">☆4</option>
+            <option value="3">☆3</option><option value="2">☆2</option><option value="1">☆1</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-block;width:clamp(96px,13vw,130px);font-size:clamp(12px,1.3vw,13px);color:var(--text-mid);flex-shrink:0;">難易度</span>
+          <span style="display:flex;flex-wrap:wrap;gap:4px 14px;">
+            <label style="font-size:13px;color:var(--text-mid);display:flex;align-items:center;gap:6px;"><input type="checkbox" data-diff="0" checked>B</label>
+            <label style="font-size:13px;color:var(--text-mid);display:flex;align-items:center;gap:6px;"><input type="checkbox" data-diff="1" checked>N</label>
+            <label style="font-size:13px;color:var(--text-mid);display:flex;align-items:center;gap:6px;"><input type="checkbox" data-diff="2" checked>H</label>
+            <label style="font-size:13px;color:var(--text-mid);display:flex;align-items:center;gap:6px;"><input type="checkbox" data-diff="3" checked>A</label>
+            <label style="font-size:13px;color:var(--text-mid);display:flex;align-items:center;gap:6px;"><input type="checkbox" data-diff="4" checked>L</label>
+          </span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-block;width:clamp(96px,13vw,130px);font-size:clamp(12px,1.3vw,13px);color:var(--text-mid);flex-shrink:0;">ランプ</span>
+          <select id="lampFilter" style="background:var(--surface);color:var(--text);border:2px solid var(--border);border-radius:14px;padding:7px 10px;font-size:14px;font-weight:600;font-family:inherit;">
+            <option value="">すべて</option>
+            <option>FULLCOMBO CLEAR</option><option>EX HARD CLEAR</option><option>HARD CLEAR</option>
+            <option>CLEAR</option><option>EASY CLEAR</option><option>ASSIST CLEAR</option>
+            <option>FAILED</option><option>NO PLAY</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-block;width:clamp(96px,13vw,130px);font-size:clamp(12px,1.3vw,13px);color:var(--text-mid);flex-shrink:0;">DJレベル</span>
+          <select id="djFilter" style="background:var(--surface);color:var(--text);border:2px solid var(--border);border-radius:14px;padding:7px 10px;font-size:14px;font-weight:600;font-family:inherit;">
+            <option value="">すべて</option>
+            <option>AAA</option><option>AA</option><option>A</option><option>B</option>
+            <option>C</option><option>D</option><option>E</option><option>F</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-block;width:clamp(96px,13vw,130px);flex-shrink:0;"></span>
+          <label style="font-size:13px;color:var(--text-mid);display:flex;align-items:center;gap:6px;"><input type="checkbox" id="inclCurNoPlay">今作未プレーの譜面も表示</label>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-block;width:clamp(96px,13vw,130px);flex-shrink:0;"></span>
+          <label style="font-size:13px;color:var(--text-mid);display:flex;align-items:center;gap:6px;"><input type="checkbox" id="inclNoPlay">未プレーの譜面も表示</label>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-block;width:clamp(96px,13vw,130px);flex-shrink:0;"></span>
+          <button id="randomBtn" class="btn-random" disabled>🎲 ランダムで4曲選ぶ</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="pickArea" style="display:none;background:var(--card);border-radius:20px;padding:clamp(16px,2.2vw,24px) clamp(16px,2.6vw,28px);margin-bottom:20px;border:2px solid transparent;">
+      <h3 style="margin:4px 0 12px;font-size:18px;font-weight:700;color:var(--text);">🎲 今日の課題曲</h3>
+      <div id="picks" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));gap:12px;margin-top:14px;"></div>
+    </div>
+
+    <div style="background:var(--card);border-radius:20px;padding:clamp(16px,2.2vw,24px) clamp(16px,2.6vw,28px);margin-bottom:20px;border:2px solid transparent;">
+      <div id="count1" style="font-size:15px;margin:8px 0;">CSVを読み込んでください</div>
+      <div style="max-height:min(520px,60vh);overflow-y:auto;overflow-x:hidden;border-radius:20px 20px 0 0;background:var(--surface);">
+        <table id="table1">
+          <thead><tr>
+            <th data-k="days">経過日数</th><th data-k="title">タイトル</th>
+            <th data-k="djlevel">スコア</th><th data-k="last">最終プレー日時</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <div id="pickArea" style="display:none;" class="card">
-    <h3>🎲 今日の課題曲（ランダム4曲）</h3>
-    <div class="picks" id="picks"></div>
+  <div id="p2" data-page="p2" style="display:none;padding:2px clamp(10px,3vw,24px) 60px;">
+    <div class="page-card-first" style="background:var(--card);padding:clamp(16px,2.2vw,24px) clamp(16px,2.6vw,28px);margin-bottom:20px;border:2px solid transparent;">
+      <div style="background:var(--surface);border-radius:14px;padding:16px;">
+        <div style="font-size:15px;color:var(--text);font-weight:700;">📋 コピペで読み込む</div>
+        <div style="display:flex;flex-wrap:wrap;gap:20px;margin-top:6px;">
+          <div style="flex:1 1 280px;min-width:0;">
+            <div style="font-size:13px;color:var(--accent);font-weight:700;margin-left:0.5em;">現行バージョン</div>
+            <textarea id="pasteCur" placeholder="現行バージョンのCSV内容を貼り付け" style="width:100%;height:110px;margin-top:8px;background:var(--surface);color:var(--text);border:2px solid var(--border);border-radius:14px;padding:8px;font-size:12px;font-family:monospace;resize:vertical;"></textarea>
+            <button id="pasteBtnCur" class="btn-ghost" style="margin-top:6px;">貼り付けた内容を読み込む</button>
+          </div>
+          <div style="flex:1 1 280px;min-width:0;">
+            <div style="font-size:13px;color:var(--accent);font-weight:700;margin-left:0.5em;">過去バージョン</div>
+            <textarea id="pastePast" placeholder="過去バージョンのCSV内容を貼り付け（1バージョン分ずつ追加できます）" style="width:100%;height:110px;margin-top:8px;background:var(--surface);color:var(--text);border:2px solid var(--border);border-radius:14px;padding:8px;font-size:12px;font-family:monospace;resize:vertical;"></textarea>
+            <button id="pasteBtnPast" class="btn-ghost" style="margin-top:6px;">貼り付けた内容を読み込む</button>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text-mid);margin-top:8px;line-height:1.6;">プレイデータCSVのダウンロードは<a href="https://p.eagate.573.jp/game/2dx/33/djdata/score_download.html?style=SP" target="_blank" rel="noopener" style="font-weight:700;">こちら</a>から</div>
+      </div>
+      <div style="background:var(--surface);border-radius:14px;padding:16px;margin-top:14px;">
+        <div style="font-size:15px;color:var(--text);font-weight:700;">📁 CSVで読み込む</div>
+        <div class="csv-row" style="display:flex;flex-wrap:wrap;gap:clamp(8px,1.4vw,14px);align-items:center;margin-top:6px;">
+          <label class="btn-tint">📂 現行バージョンのCSV<input type="file" id="csvCur" accept=".csv"></label>
+          <div style="display:flex;flex-wrap:wrap;gap:clamp(8px,1.4vw,14px);align-items:center;">
+            <button id="clearSaved2" class="btn-ghost">🗑 保存データをクリア</button>
+            <span id="statusCur" style="font-size:13px;color:var(--text-mid);white-space:nowrap;">未読み込み</span>
+          </div>
+        </div>
+        <div class="csv-row" style="display:flex;flex-wrap:wrap;gap:clamp(8px,1.4vw,14px);align-items:center;margin-top:6px;">
+          <label class="btn-tint">📂 過去バージョンのCSV（複数可）<input type="file" id="csvPast" accept=".csv" multiple></label>
+          <div style="display:flex;flex-wrap:wrap;gap:clamp(8px,1.4vw,14px);align-items:center;">
+            <button id="clearPastBtn" class="btn-ghost">過去データをクリア</button>
+            <span id="statusPast" style="font-size:13px;color:var(--text-mid);white-space:nowrap;">未読み込み</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:16px;align-items:flex-start;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-block;width:clamp(96px,13vw,130px);font-size:clamp(12px,1.3vw,13px);color:var(--text-mid);flex-shrink:0;">レベル</span>
+          <select id="lvFilter2" style="background:var(--surface);color:var(--text);border:2px solid var(--border);border-radius:14px;padding:7px 10px;font-size:14px;font-weight:600;font-family:inherit;">
+            <option value="">選択してください</option>
+            <option value="12">☆12</option><option value="11">☆11</option><option value="10">☆10</option>
+            <option value="9">☆9</option><option value="8">☆8</option><option value="7">☆7</option>
+            <option value="6">☆6</option><option value="5">☆5</option><option value="4">☆4</option>
+            <option value="3">☆3</option><option value="2">☆2</option><option value="1">☆1</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-block;width:clamp(96px,13vw,130px);font-size:clamp(12px,1.3vw,13px);color:var(--text-mid);flex-shrink:0;">今作DJレベル</span>
+          <select id="djFilterCur" style="background:var(--surface);color:var(--text);border:2px solid var(--border);border-radius:14px;padding:7px 10px;font-size:14px;font-weight:600;font-family:inherit;">
+            <option value="">すべて</option>
+            <option>AAA</option><option>AA</option><option>A</option><option>B</option>
+            <option>C</option><option>D</option><option>E</option><option>F</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-block;width:clamp(96px,13vw,130px);font-size:clamp(12px,1.3vw,13px);color:var(--text-mid);flex-shrink:0;">過去ベストDJレベル</span>
+          <select id="djFilterPast" style="background:var(--surface);color:var(--text);border:2px solid var(--border);border-radius:14px;padding:7px 10px;font-size:14px;font-weight:600;font-family:inherit;">
+            <option value="">すべて</option>
+            <option>AAA</option><option>AA</option><option>A</option><option>B</option>
+            <option>C</option><option>D</option><option>E</option><option>F</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-block;width:clamp(96px,13vw,130px);flex-shrink:0;"></span>
+          <label style="font-size:13px;color:var(--text-mid);display:flex;align-items:center;gap:6px;"><input type="checkbox" id="includeUnplayed">現行スコア0（未プレー）の譜面も表示</label>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text-mid);margin-top:6px;line-height:1.6;">曲名＋難易度ごとにスコアを比較し、過去バージョンの自己ベストより現行スコアが低い譜面を表示します。</div>
+    </div>
+
+    <div style="background:var(--card);border-radius:20px;padding:clamp(16px,2.2vw,24px) clamp(16px,2.6vw,28px);margin-bottom:20px;border:2px solid transparent;">
+      <div id="count2" style="font-size:15px;margin:8px 0;">現行・過去のCSVを読み込み、レベルを選択すると自動で比較します</div>
+      <div style="max-height:min(520px,60vh);overflow-y:auto;overflow-x:hidden;border-radius:20px 20px 0 0;background:var(--surface);">
+        <table id="table2">
+          <thead><tr>
+            <th>タイトル</th><th>現行スコア</th><th>過去ベスト</th><th>差</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
-  <div class="card">
-    <div class="count" id="count1">CSVを読み込んでください</div>
-    <div class="tablewrap">
-      <table id="table1">
-        <thead><tr>
-          <th data-k="days">経過日数</th><th data-k="title">タイトル</th>
-          <th data-k="djlevel">スコア</th>
-          <th data-k="last">最終プレー日時</th>
-        </tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- ============ ページ2 ============ -->
-<div class="page" id="p2">
-  <div class="card">
-    <h3>過去バージョンよりスコアが下がっている譜面を探す</h3>
-    <div class="row">
-      <label class="filelabel">📂 現行バージョンのCSV<input type="file" id="csvCur" accept=".csv"></label>
-      <button class="secondary" id="clearSaved2">🗑 保存データをクリア</button>
-      <span class="status" id="statusCur">未読み込み</span>
-    </div>
-    <details class="pastebox">
-      <summary>📋 現行バージョンをコピペで読み込む</summary>
-      <div class="hint">プレイデータCSVのダウンロードは<a href="https://p.eagate.573.jp/game/2dx/33/djdata/score_download.html?style=SP" target="_blank" rel="noopener">こちら</a>から</div>
-      <textarea id="pasteCur" placeholder="現行バージョンのCSV内容を貼り付け"></textarea>
-      <button class="secondary" id="pasteBtnCur">貼り付けた内容を読み込む</button>
-    </details>
-    <div class="row" style="margin-top:14px;">
-      <label class="filelabel">📂 過去バージョンのCSV（複数可）<input type="file" id="csvPast" accept=".csv" multiple></label>
-      <button class="secondary" id="clearPastBtn">過去データをクリア</button>
-      <span class="status" id="statusPast">未読み込み</span>
-    </div>
-    <details class="pastebox">
-      <summary>📋 過去バージョンをコピペで追加</summary>
-      <textarea id="pastePast" placeholder="過去バージョンのCSV内容を貼り付け（1バージョン分ずつ追加できます）"></textarea>
-      <button class="secondary" id="pasteBtnPast">貼り付けた内容を追加</button>
-    </details>
-    <div class="vstack">
-      <div class="vitem"><span class="vlabel">レベル</span>
-        <select id="lvFilter2"><option value="">選択してください</option></select></div>
-      <div class="vitem"><span class="vlabel">今作DJレベル</span>
-        <select id="djFilterCur">
-          <option value="">すべて</option>
-          <option>AAA</option><option>AA</option><option>A</option><option>B</option>
-          <option>C</option><option>D</option><option>E</option><option>F</option>
-        </select></div>
-      <div class="vitem"><span class="vlabel">過去ベスト<br class="mbr">DJレベル</span>
-        <select id="djFilterPast">
-          <option value="">すべて</option>
-          <option>AAA</option><option>AA</option><option>A</option><option>B</option>
-          <option>C</option><option>D</option><option>E</option><option>F</option>
-        </select></div>
-      <div class="vitem"><span class="vlabel"></span>
-        <label class="checkline"><input type="checkbox" id="includeUnplayed">現行スコア0（未プレー）の譜面も表示</label></div>
-    </div>
-    <div class="hint">曲名＋難易度ごとにスコアを比較し、過去バージョンの自己ベストより現行スコアが低い譜面を表示します。</div>
-  </div>
-
-  <div class="card">
-    <div class="count" id="count2">現行・過去のCSVを読み込み、レベルを選択すると自動で比較します</div>
-    <div class="tablewrap">
-      <table id="table2">
-        <thead><tr>
-          <th>タイトル</th><th>現行スコア</th><th>過去ベスト</th><th>差</th>
-        </tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
+  <footer style="padding:20px clamp(14px,3vw,24px) 40px;font-size:11px;color:var(--text-mid);line-height:1.8;border-top:1px solid var(--border);margin-top:10px;">
+    本サイトは個人が制作した非公式のファンツールであり、株式会社コナミアミューズメントおよびコナミグループとは一切関係ありません。<br>
+    「beatmania IIDX」「e-amusement」はコナミグループの商標または登録商標です。<br>
+    読み込んだプレーデータはお使いのブラウザ内でのみ処理・保存され、サーバー等の外部に送信されることはありません。
+  </footer>
 </div>
 
 <script>
-"use strict";
-const DIFFS = ["BEGINNER","NORMAL","HYPER","ANOTHER","LEGGENDARIA"];
-/* 難易度カラー: B=黄緑 N=水色 H=黄 A=赤 L=紫（ライトはマスタード等の濃色） */
-const DIFF_COLORS=["#9BDB4D","#5EEAFF","#FFD948","#FF5252","#C77DFF"];
-const DIFF_COLORS_LIGHT=["#5FA82E","#1E9FBF","#D4A017","#E03131","#9A4DE0"];
-function isLight(){ return document.documentElement.dataset.theme==="light"; }
-function diffColor(i){ return (isLight()?DIFF_COLORS_LIGHT:DIFF_COLORS)[i] || (isLight()?"#333":"#fff"); }
+(function(){
+  const root = document.getElementById("iidx");
+  const $ = id => root.querySelector("#" + id);
 
-/* ---------- データ保持 (localStorage) ---------- */
-const LS_MAIN="iidxpc_main", LS_CUR="iidxpc_cur", LS_PAST="iidxpc_past";
-let restoring=false;
-let pastRaw=[]; // [{label,text}]
-function saveLS(key,val){
-  try{ localStorage.setItem(key, JSON.stringify(val)); }
-  catch(e){ console.warn("データ保存に失敗しました:",e); }
-}
-function removeLS(key){ try{ localStorage.removeItem(key); }catch(e){} }
+  /* ---------- ダークモード切り替え ---------- */
+  (function initTheme(){
+    const THEME_KEY = "iidxpc_theme";
+    const html = document.documentElement;
+    const toggleBtn = document.getElementById("themeToggle");
+    const systemPrefersDark = () => matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = () => html.dataset.theme ? html.dataset.theme === "dark" : systemPrefersDark();
+    const updateIcon = () => { if(toggleBtn) toggleBtn.textContent = isDark() ? "☀️" : "🌙"; };
 
-/* レベル選択肢 ☆12〜☆1 */
-["lvFilter","lvFilter2"].forEach(id=>{
-  const sel=document.getElementById(id);
-  for(let i=12;i>=1;i--){
-    const o=document.createElement("option");
-    o.value=i; o.textContent="☆"+i;
-    sel.appendChild(o);
-  }
-});
+    let saved = null;
+    try{ saved = localStorage.getItem(THEME_KEY); }catch(e){}
+    if(saved === "dark" || saved === "light") html.dataset.theme = saved;
+    updateIcon();
 
-/* ---------- CSV utils ---------- */
-async function readCSVFile(file){
-  const buf = await file.arrayBuffer();
-  let text;
-  try { text = new TextDecoder("utf-8",{fatal:true}).decode(buf); }
-  catch(e){ text = new TextDecoder("shift-jis").decode(buf); }
-  return text;
-}
-function parseCSVLine(line){
-  const out=[]; let cur="",inQ=false;
-  for(let i=0;i<line.length;i++){
-    const c=line[i];
-    if(inQ){
-      if(c==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else inQ=false; }
-      else cur+=c;
-    }else{
-      if(c==='"') inQ=true;
-      else if(c===','){ out.push(cur); cur=""; }
-      else cur+=c;
-    }
-  }
-  out.push(cur);
-  return out;
-}
-function parseSongs(text){
-  const lines = text.split(/\r?\n/).filter(l=>l.trim()!=="");
-  const songs=[];
-  const start = lines[0].startsWith("バージョン") ? 1 : 0;
-  for(let i=start;i<lines.length;i++){
-    const f = parseCSVLine(lines[i]);
-    if(f.length < 41) continue;
-    const charts=[];
-    for(let d=0;d<5;d++){
-      const base = 5 + d*7;
-      charts.push({
-        level: parseInt(f[base])||0,
-        score: parseInt(f[base+1])||0,
-        clear: f[base+5],
-        djlevel: f[base+6]
+    if(toggleBtn){
+      toggleBtn.addEventListener("click", ()=>{
+        const next = isDark() ? "light" : "dark";
+        html.dataset.theme = next;
+        try{ localStorage.setItem(THEME_KEY, next); }catch(e){}
+        updateIcon();
       });
     }
-    songs.push({
-      version:f[0], title:f[1], genre:f[2], artist:f[3],
-      plays: parseInt(f[4])||0, charts,
-      last: f[40] ? new Date(f[40].replace(" ","T")) : null,
-      lastStr: f[40]||""
+    try{
+      matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>{
+        if(!html.dataset.theme) updateIcon();
+      });
+    }catch(e){}
+  })();
+
+  const pickCount = 4;
+  const defMonths = 3;
+  const oldDays = 270;
+  const midDays = Math.round(oldDays * 2 / 3);
+
+  const DIFFS = ["BEGINNER","NORMAL","HYPER","ANOTHER","LEGGENDARIA"];
+  const DIFF_COLORS = ["var(--diff-b)","var(--diff-n)","var(--diff-h)","var(--diff-a)","var(--diff-l)"];
+  const diffColor = i => DIFF_COLORS[i] || "#333";
+  const escapeHtml = s => String(s).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+
+  const LS_MAIN="iidxpc_main", LS_CUR="iidxpc_cur", LS_PAST="iidxpc_past";
+  let restoring=false, pastRaw=[];
+  const saveLS=(k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ console.warn("データ保存に失敗しました:",e); } };
+  const removeLS=k=>{ try{ localStorage.removeItem(k); }catch(e){} };
+
+  $("months").value = defMonths;
+  $("randomBtn").textContent = "🎲 ランダムで" + pickCount + "曲選ぶ";
+  $("randomBtn").disabled = true;
+
+  async function readCSVFile(file){
+    const buf = await file.arrayBuffer();
+    try { return new TextDecoder("utf-8",{fatal:true}).decode(buf); }
+    catch(e){ return new TextDecoder("shift-jis").decode(buf); }
+  }
+  function parseCSVLine(line){
+    const out=[]; let cur="",inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(inQ){
+        if(c==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else inQ=false; }
+        else cur+=c;
+      }else{
+        if(c==='"') inQ=true;
+        else if(c===','){ out.push(cur); cur=""; }
+        else cur+=c;
+      }
+    }
+    out.push(cur);
+    return out;
+  }
+  function parseSongs(text){
+    const lines = text.split(/\r?\n/).filter(l=>l.trim()!=="");
+    const songs=[];
+    if(!lines.length) return songs;
+    const start = lines[0].startsWith("バージョン") ? 1 : 0;
+    for(let i=start;i<lines.length;i++){
+      const f = parseCSVLine(lines[i]);
+      if(f.length < 41) continue;
+      const charts=[];
+      for(let d=0;d<5;d++){
+        const base = 5 + d*7;
+        charts.push({ level: parseInt(f[base])||0, score: parseInt(f[base+1])||0, clear: f[base+5], djlevel: f[base+6] });
+      }
+      songs.push({
+        version:f[0], title:f[1], genre:f[2], artist:f[3],
+        plays: parseInt(f[4])||0, charts,
+        last: f[40] ? new Date(f[40].replace(" ","T")) : null,
+        lastStr: f[40]||""
+      });
+    }
+    return songs;
+  }
+
+  const tabs = [...root.querySelectorAll("[data-tab]")];
+  function updateCardCorners(){
+    if(!tabs.length) return;
+    const lastTabRight = tabs[tabs.length-1].getBoundingClientRect().right;
+    root.querySelectorAll(".page-card-first").forEach(card=>{
+      const cardRight = card.getBoundingClientRect().right;
+      const full = cardRight > 0 && Math.abs(lastTabRight - cardRight) < 1;
+      card.classList.toggle("tabs-full", full);
     });
   }
-  return songs;
-}
-
-/* ---------- タブ ---------- */
-document.querySelectorAll(".tab").forEach(t=>{
-  t.addEventListener("click",()=>{
-    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-    document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
-    t.classList.add("active");
-    document.getElementById(t.dataset.page).classList.add("active");
-  });
-});
-
-/* ========== ページ1 ========== */
-let allSongs=[], filtered=[], sortKey="last", sortAsc=true;
-
-function loadMainSongs(text,label){
-  const songs = parseSongs(text);
-  if(!songs.length){alert("CSVデータを認識できませんでした。内容を確認してください。");return;}
-  allSongs = songs;
-  document.getElementById("status1").textContent = `${label}（${allSongs.length}曲）を読み込みました`;
-  document.getElementById("randomBtn").disabled=false;
-  if(!restoring) saveLS(LS_MAIN,{label,text});
-  applyFilter();
-}
-document.getElementById("csv1").addEventListener("change",async e=>{
-  const file=e.target.files[0]; if(!file)return;
-  loadMainSongs(await readCSVFile(file), file.name);
-});
-document.getElementById("pasteBtn1").addEventListener("click",()=>{
-  const text=document.getElementById("paste1").value;
-  if(!text.trim()){alert("CSVの内容を貼り付けてください");return;}
-  loadMainSongs(text,"貼り付けデータ");
-});
-document.getElementById("clearSaved1").addEventListener("click",()=>{
-  removeLS(LS_MAIN);
-  allSongs=[]; filtered=[];
-  document.querySelector("#table1 tbody").innerHTML="";
-  document.getElementById("count1").textContent="CSVを読み込んでください";
-  document.getElementById("status1").textContent="未読み込み";
-  document.getElementById("randomBtn").disabled=true;
-  document.getElementById("pickArea").style.display="none";
-});
-document.getElementById("months").addEventListener("input",applyFilter);
-document.getElementById("lvFilter").addEventListener("change",applyFilter);
-document.getElementById("lampFilter").addEventListener("change",applyFilter);
-document.getElementById("djFilter").addEventListener("change",applyFilter);
-document.getElementById("inclCurNoPlay").addEventListener("change",applyFilter);
-document.getElementById("inclNoPlay").addEventListener("change",applyFilter);
-document.querySelectorAll("#diffChecks1 .diffChk").forEach(cb=>{
-  cb.addEventListener("change",applyFilter);
-});
-function selectedDiffs(){
-  return new Set([...document.querySelectorAll("#diffChecks1 .diffChk")]
-    .filter(cb=>cb.checked).map(cb=>parseInt(cb.dataset.i)));
-}
-
-function applyFilter(){
-  if(!allSongs.length)return;
-  const months = parseInt(document.getElementById("months").value)||3;
-  const lv = parseInt(document.getElementById("lvFilter").value)||0;
-  if(!lv){
-    filtered=[];
-    document.querySelector("#table1 tbody").innerHTML="";
-    document.getElementById("count1").innerHTML =
-      `レベルを選択すると該当曲を表示します（全 ${allSongs.length} 曲）`;
-    return;
+  const setTab = id => {
+    tabs.forEach(t=>{
+      const on = t.dataset.tab === id;
+      t.style.background = on ? "var(--tab-active)" : "var(--tab-inactive)";
+      t.style.borderColor = on ? "var(--tab-active)" : "transparent";
+    });
+    root.querySelectorAll("[data-page]").forEach(p=>{ p.style.display = p.dataset.page===id ? "block" : "none"; });
+    updateCardCorners();
+  };
+  tabs.forEach(t=> t.addEventListener("click", ()=> setTab(t.dataset.tab)));
+  updateCardCorners();
+  window.addEventListener("resize", updateCardCorners);
+  if(typeof ResizeObserver !== "undefined"){
+    new ResizeObserver(updateCardCorners).observe(document.body);
   }
-  const inclCur = document.getElementById("inclCurNoPlay").checked;
-  const inclNP = document.getElementById("inclNoPlay").checked;
-  const lampSel = document.getElementById("lampFilter").value;
-  const djSel = document.getElementById("djFilter").value;
-  const diffSel = selectedDiffs();
-  const cutoff = new Date();
-  cutoff.setMonth(cutoff.getMonth()-months);
-  filtered = allSongs.filter(s=>{
-    const dateOK = s.last && !isNaN(s.last) && s.last <= cutoff;
-    /* 基本: 選択レベルの譜面にスコアが付いている曲（経過期間の条件あり）
-       今作未プレー: ランプがNO PLAYでないがスコア0（経過期間の条件あり）
-       未プレー: ランプがNO PLAYの譜面すべて（最終プレー日時は参照しない）
-       ランプ・DJレベルの指定があれば同じ譜面で判定
-       難易度(B/N/H/A/L)チェックで対象の譜面種別を絞り込み */
-    const mi = s.charts.findIndex((c,i)=>
-      c.level===lv &&
-      diffSel.has(i) &&
-      ((c.score>0 && dateOK) ||
-       (inclCur && c.clear!=="NO PLAY" && c.score===0 && dateOK) ||
-       (inclNP && c.clear==="NO PLAY" && c.score===0)) &&
-      (!lampSel || c.clear===lampSel) &&
-      (!djSel || c.djlevel===djSel)
-    );
-    if(mi<0) return false;
-    s._m = s.charts[mi];
-    s._mi = mi;
-    return true;
+
+  let allSongs=[], filtered=[], sortKey="last", sortAsc=true;
+
+  function loadMainSongs(text,label){
+    const songs = parseSongs(text);
+    if(!songs.length){ alert("CSVデータを認識できませんでした。内容を確認してください。"); return; }
+    allSongs = songs;
+    $("status1").textContent = `${label}（${allSongs.length}曲）を読み込みました`;
+    $("randomBtn").disabled = false;
+    $("randomBtn").style.opacity = "1";
+    if(!restoring) saveLS(LS_MAIN,{label,text});
+    applyFilter();
+  }
+  $("csv1").addEventListener("change", async e=>{
+    const file=e.target.files[0]; if(!file) return;
+    loadMainSongs(await readCSVFile(file), file.name);
   });
-  renderTable1();
-}
-function daysAgo(d){ return Math.floor((Date.now()-d.getTime())/86400000); }
+  $("pasteBtn1").addEventListener("click",()=>{
+    const text=$("paste1").value;
+    if(!text.trim()){ alert("CSVの内容を貼り付けてください"); return; }
+    loadMainSongs(text,"貼り付けデータ");
+  });
+  $("clearSaved1").addEventListener("click",()=>{
+    removeLS(LS_MAIN);
+    allSongs=[]; filtered=[];
+    root.querySelector("#table1 tbody").innerHTML="";
+    $("count1").textContent="CSVを読み込んでください";
+    $("status1").textContent="未読み込み";
+    $("randomBtn").disabled=true;
+    $("randomBtn").style.opacity=".35";
+    $("pickArea").style.display="none";
+  });
+  ["months","lvFilter","lampFilter","djFilter"].forEach(id=>{
+    $(id).addEventListener(id==="months"?"input":"change", applyFilter);
+  });
+  $("inclCurNoPlay").addEventListener("change", applyFilter);
+  $("inclNoPlay").addEventListener("change", applyFilter);
+  root.querySelectorAll("[data-diff]").forEach(cb=> cb.addEventListener("change", applyFilter));
+  const selectedDiffs = () => new Set([...root.querySelectorAll("[data-diff]")].filter(cb=>cb.checked).map(cb=>parseInt(cb.dataset.diff)));
 
-const LAMP_COLORS={
-  "FULLCOMBO CLEAR":"#f9c",
-  "EX HARD CLEAR":"#FFE375",
-  "HARD CLEAR":"#ffffff",
-  "CLEAR":"#5EEAFF",
-  "EASY CLEAR":"#BDFF7C",
-  "ASSIST CLEAR":"#9474DD",
-  "FAILED":"#A9A9A9",
-  "NO PLAY":"#ffffff"
-};
-/* ライトモード用ランプカラー（EXHはマスタードイエロー、淡色は濃いめに調整） */
-const LAMP_COLORS_LIGHT={
-  "FULLCOMBO CLEAR":"#FF66B2",
-  "EX HARD CLEAR":"#D4A017",
-  "HARD CLEAR":"#ffffff",
-  "CLEAR":"#21A9D8",
-  "EASY CLEAR":"#6FBF3A",
-  "ASSIST CLEAR":"#9474DD",
-  "FAILED":"#A9A9A9",
-  "NO PLAY":"#ffffff"
-};
-function lampStyle(name){
-  /* NO PLAY(未プレー)はランプ自体を表示しない */
-  if(name==="NO PLAY") return "display:none";
-  const c=(isLight()?LAMP_COLORS_LIGHT:LAMP_COLORS)[name]||"#ffffff";
-  let s="background:"+c;
-  /* 白いランプ(HARD CLEAR)はライトモードの白背景に埋もれるため枠線を付ける */
-  if(name==="HARD CLEAR" && isLight()) s+=";border:1px solid #9aa0b8";
-  return s;
-}
-const LAMP_RANK=["NO PLAY","FAILED","ASSIST CLEAR","EASY CLEAR","CLEAR","HARD CLEAR","EX HARD CLEAR","FULLCOMBO CLEAR"];
-const DJ_RANK=["---","F","E","D","C","B","A","AA","AAA"];
-/* 表示優先度: 0=未プレー → 1=今作未プレー → 2=スコアあり
-   ※スコアが付いていればランプがNO PLAYでも「プレー済み」扱い（段位のみでのプレー等） */
-function chartRank(m){ return m.score>0 ? 2 : (m.clear==="NO PLAY" ? 0 : 1); }
-
-function renderTable1(){
-  const tb=document.querySelector("#table1 tbody");
-  const arr=[...filtered].sort((a,b)=>{
-    let va,vb;
-    switch(sortKey){
-      case "plays": va=a.plays;vb=b.plays;break;
-      case "days": case "last": {
-        /* 未プレー → 今作未プレー → 経過日数の長い順 */
-        const ra=chartRank(a._m), rb=chartRank(b._m);
-        if(ra!==rb){ va=ra; vb=rb; }
-        else { va=a.last; vb=b.last; }
-        break;
-      }
-      case "lamp": va=LAMP_RANK.indexOf(a._m.clear);vb=LAMP_RANK.indexOf(b._m.clear);break;
-      case "djlevel": va=DJ_RANK.indexOf(a._m.djlevel);vb=DJ_RANK.indexOf(b._m.djlevel);break;
-      default: va=a[sortKey];vb=b[sortKey];
+  function applyFilter(){
+    if(!allSongs.length) return;
+    const months = parseInt($("months").value) || defMonths;
+    const lv = parseInt($("lvFilter").value)||0;
+    if(!lv){
+      filtered=[];
+      root.querySelector("#table1 tbody").innerHTML="";
+      $("count1").innerHTML = `レベルを選択すると該当曲を表示します（全 ${allSongs.length} 曲）`;
+      return;
     }
-    if(va<vb)return sortAsc?-1:1;
-    if(va>vb)return sortAsc?1:-1;
-    return 0;
-  });
-  tb.innerHTML = arr.map(s=>{
-    const d=daysAgo(s.last);
-    const cls = d>=270?"old":(d>=180?"mid":"");
-    const m = s._m;
-    let daysCell;
-    if(m.score>0) daysCell = `<td class="${cls}">${d}日前</td>`;
-    else if(m.clear!=="NO PLAY") daysCell = `<td class="npdays">今作未</td>`;
-    else daysCell = `<td class="npdays">未</td>`;
-    return `<tr>${daysCell}
-      <td class="ttl"><span class="lvnum" style="color:${diffColor(s._mi)}">${m.level}</span><span class="lampbar" style="${lampStyle(m.clear)}" title="${escapeHtml(m.clear)}"></span>${escapeHtml(s.title)}</td>
-      <td>${m.score>0?`<span class="djsm">${escapeHtml(m.djlevel||"---")}</span><br><span class="scsm">${m.score}</span>`:"---"}</td>
-      <td class="dt">${chartRank(m)===2?escapeHtml(s.lastStr):"---"}</td></tr>`;
-  }).join("");
-  document.getElementById("count1").innerHTML =
-    `該当曲: <b>${filtered.length}</b> 曲 / 全 ${allSongs.length} 曲`;
-}
-document.querySelectorAll("#table1 th").forEach(th=>{
-  th.addEventListener("click",()=>{
-    const k=th.dataset.k;
-    if(sortKey===k) sortAsc=!sortAsc; else {sortKey=k;sortAsc=true;}
+    const inclCur = $("inclCurNoPlay").checked;
+    const inclNP = $("inclNoPlay").checked;
+    const lampSel = $("lampFilter").value;
+    const djSel = $("djFilter").value;
+    const diffSel = selectedDiffs();
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth()-months);
+    filtered = allSongs.filter(s=>{
+      const dateOK = s.last && !isNaN(s.last) && s.last <= cutoff;
+      const mi = s.charts.findIndex((c,i)=>
+        c.level===lv && diffSel.has(i) &&
+        ((c.score>0 && dateOK) ||
+         (inclCur && c.clear!=="NO PLAY" && c.score===0 && dateOK) ||
+         (inclNP && c.clear==="NO PLAY" && c.score===0)) &&
+        (!lampSel || c.clear===lampSel) &&
+        (!djSel || c.djlevel===djSel)
+      );
+      if(mi<0) return false;
+      s._m = s.charts[mi];
+      s._mi = mi;
+      return true;
+    });
     renderTable1();
-  });
-});
-
-document.getElementById("randomBtn").addEventListener("click",()=>{
-  const selLv = parseInt(document.getElementById("lvFilter").value)||0;
-  // 該当曲一覧(filtered)に表示されている曲すべて（未プレー・今作未プレーを含む）からランダム抽選
-  const pool = [...filtered];
-  if(!pool.length){alert("該当曲がありません");return;}
-  const picks=[];
-  for(let i=0;i<4 && pool.length;i++){
-    picks.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
   }
-  const area=document.getElementById("picks");
-  area.innerHTML = picks.map(s=>{
-    const lv = s.charts.map((c,i)=>{
-      const isHit = selLv && c.level===selLv;
-      if(c.score>0){
-        return `<span class="badge${isHit?" hit":""}">${DIFFS[i][0]}${DIFFS[i]==="LEGGENDARIA"?"†":""}☆${c.level} ${c.score}</span>`;
+  const daysAgo = d => Math.floor((Date.now()-d.getTime())/86400000);
+
+  const LAMP_COLORS={
+    "FULLCOMBO CLEAR":"var(--lamp-fc)","EX HARD CLEAR":"var(--lamp-exh)","HARD CLEAR":"var(--lamp-hard)",
+    "CLEAR":"var(--lamp-clear)","EASY CLEAR":"var(--lamp-easy)","ASSIST CLEAR":"var(--lamp-assist)",
+    "FAILED":"var(--lamp-failed)","NO PLAY":"var(--surface)"
+  };
+  function lampStyle(name){
+    if(name==="NO PLAY") return "display:none";
+    let s="background:" + (LAMP_COLORS[name]||"var(--surface)");
+    if(name==="HARD CLEAR") s+=";border:1px solid var(--lamp-hard-border)";
+    return s;
+  }
+  const LAMP_RANK=["NO PLAY","FAILED","ASSIST CLEAR","EASY CLEAR","CLEAR","HARD CLEAR","EX HARD CLEAR","FULLCOMBO CLEAR"];
+  const DJ_RANK=["---","F","E","D","C","B","A","AA","AAA"];
+  const chartRank = m => m.score>0 ? 2 : (m.clear==="NO PLAY" ? 0 : 1);
+
+  function renderTable1(){
+    const tb=root.querySelector("#table1 tbody");
+    const arr=[...filtered].sort((a,b)=>{
+      let va,vb;
+      switch(sortKey){
+        case "plays": va=a.plays; vb=b.plays; break;
+        case "days": case "last": {
+          const ra=chartRank(a._m), rb=chartRank(b._m);
+          if(ra!==rb){ va=ra; vb=rb; } else { va=a.last; vb=b.last; }
+          break;
+        }
+        case "lamp": va=LAMP_RANK.indexOf(a._m.clear); vb=LAMP_RANK.indexOf(b._m.clear); break;
+        case "djlevel": va=DJ_RANK.indexOf(a._m.djlevel); vb=DJ_RANK.indexOf(b._m.djlevel); break;
+        default: va=a[sortKey]; vb=b[sortKey];
       }
-      if(i===s._mi){
-        const label = c.clear==="NO PLAY" ? "未プレー" : "今作未プレー";
-        return `<span class="badge${isHit?" hit":""}">${DIFFS[i][0]}${DIFFS[i]==="LEGGENDARIA"?"†":""}☆${c.level} ${label}</span>`;
-      }
-      return "";
+      if(va<vb) return sortAsc?-1:1;
+      if(va>vb) return sortAsc?1:-1;
+      return 0;
+    });
+    tb.innerHTML = arr.map(s=>{
+      const m = s._m;
+      const d = s.last && !isNaN(s.last) ? daysAgo(s.last) : 0;
+      const cls = d>=oldDays ? "old" : (d>=midDays ? "mid" : "");
+      let daysCell;
+      if(m.score>0) daysCell = `<td class="${cls}">${d}日前</td>`;
+      else if(m.clear!=="NO PLAY") daysCell = `<td class="npdays">今作未</td>`;
+      else daysCell = `<td class="npdays">未</td>`;
+      return `<tr>${daysCell}
+        <td class="ttl"><span class="lvnum" style="color:${diffColor(s._mi)}">${m.level}</span><span class="lampbar" style="${lampStyle(m.clear)}" title="${escapeHtml(m.clear)}"></span>${escapeHtml(s.title)}</td>
+        <td>${m.score>0?`<span class="djsm">${escapeHtml(m.djlevel||"---")}</span><br><span class="scsm">${m.score}</span>`:"---"}</td>
+        <td class="dt">${chartRank(m)===2?escapeHtml(s.lastStr):"---"}</td></tr>`;
     }).join("");
-    const dateLine = chartRank(s._m)===2
-      ? `最終プレー: ${escapeHtml(s.lastStr)}（${daysAgo(s.last)}日前）`
-      : (s._m.clear==="NO PLAY" ? "未プレー" : "今作未プレー");
-    return `<div class="pick">
-      <div class="t">${escapeHtml(s.title)}</div>
-      <div class="g">${escapeHtml(s.genre)} / ${escapeHtml(s.artist)}</div>
-      <div class="g" style="margin-top:4px;">${escapeHtml(s.version)}</div>
-      <div style="margin-top:6px;">${lv}</div>
-      <div class="d">${dateLine}</div>
-    </div>`;
-  }).join("");
-  document.getElementById("pickArea").style.display="block";
-});
-
-/* ========== ページ2 ========== */
-let curSongs=null, pastData=[]; // pastData: [{name, map}]
-
-function loadCur(text,label){
-  const songs = parseSongs(text);
-  if(!songs.length){alert("CSVデータを認識できませんでした。");return;}
-  curSongs = songs;
-  document.getElementById("statusCur").textContent = `${label}（${curSongs.length}曲）`;
-  if(!restoring) saveLS(LS_CUR,{label,text});
-  runCompare();
-}
-function addPast(text,label){
-  const songs = parseSongs(text);
-  if(!songs.length){alert("CSVデータを認識できませんでした。");return;}
-  const map=new Map();
-  songs.forEach(s=>map.set(s.title,s));
-  pastData.push({name:label, map});
-  pastRaw.push({label, text});
-  if(!restoring) saveLS(LS_PAST, pastRaw);
-  renderPastStatus();
-  runCompare();
-}
-function renderPastStatus(){
-  document.getElementById("statusPast").textContent =
-    pastData.length ? pastData.map(p=>`${p.name}（${p.map.size}曲）`).join(" / ") : "未読み込み";
-}
-document.getElementById("csvCur").addEventListener("change",async e=>{
-  const file=e.target.files[0]; if(!file)return;
-  loadCur(await readCSVFile(file), file.name);
-});
-document.getElementById("pasteBtnCur").addEventListener("click",()=>{
-  const text=document.getElementById("pasteCur").value;
-  if(!text.trim()){alert("CSVの内容を貼り付けてください");return;}
-  loadCur(text,"貼り付け(現行)");
-});
-document.getElementById("csvPast").addEventListener("change",async e=>{
-  for(const file of e.target.files){
-    addPast(await readCSVFile(file), file.name);
+    $("count1").innerHTML = `該当曲: <b style="color:var(--accent);font-size:20px;">${filtered.length}</b> 曲 / 全 ${allSongs.length} 曲`;
   }
-  e.target.value="";
-});
-document.getElementById("pasteBtnPast").addEventListener("click",()=>{
-  const ta=document.getElementById("pastePast");
-  if(!ta.value.trim()){alert("CSVの内容を貼り付けてください");return;}
-  addPast(ta.value, `貼り付け(過去${pastData.length+1})`);
-  ta.value="";
-});
-document.getElementById("clearPastBtn").addEventListener("click",()=>{
-  pastData=[]; pastRaw=[];
-  removeLS(LS_PAST);
-  renderPastStatus();
-  document.querySelector("#table2 tbody").innerHTML="";
-  document.getElementById("count2").innerHTML="現行・過去のCSVを読み込み、レベルを選択すると自動で比較します";
-});
-document.getElementById("clearSaved2").addEventListener("click",()=>{
-  removeLS(LS_CUR); removeLS(LS_PAST);
-  curSongs=null; pastData=[]; pastRaw=[];
-  document.getElementById("statusCur").textContent="未読み込み";
-  renderPastStatus();
-  document.querySelector("#table2 tbody").innerHTML="";
-  document.getElementById("count2").innerHTML="現行・過去のCSVを読み込み、レベルを選択すると自動で比較します";
-});
+  root.querySelectorAll("#table1 th").forEach(th=>{
+    th.addEventListener("click",()=>{
+      const k=th.dataset.k;
+      if(sortKey===k) sortAsc=!sortAsc; else { sortKey=k; sortAsc=true; }
+      renderTable1();
+    });
+  });
 
-function runCompare(){
-  if(!(curSongs && pastData.length)) return;
-  const lv2 = parseInt(document.getElementById("lvFilter2").value)||0;
-  if(!lv2){
-    document.querySelector("#table2 tbody").innerHTML="";
-    document.getElementById("count2").innerHTML="レベルを選択すると比較結果を表示します";
-    return;
+  $("randomBtn").addEventListener("click",()=>{
+    const selLv = parseInt($("lvFilter").value)||0;
+    const pool = [...filtered];
+    if(!pool.length){ alert("該当曲がありません"); return; }
+    const picks=[];
+    for(let i=0;i<pickCount && pool.length;i++){
+      picks.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+    }
+    $("picks").innerHTML = picks.map(s=>{
+      const lv = s.charts.map((c,i)=>{
+        const isHit = selLv && c.level===selLv;
+        const tag = DIFFS[i][0] + (DIFFS[i]==="LEGGENDARIA"?"†":"");
+        if(c.score>0) return `<span class="badge${isHit?" hit":""}">☆${c.level} ${c.score} ${tag}</span>`;
+        if(i===s._mi){
+          const label = c.clear==="NO PLAY" ? "未プレー" : "今作未プレー";
+          return `<span class="badge${isHit?" hit":""}">☆${c.level} ${label} ${tag}</span>`;
+        }
+        return "";
+      }).join("");
+      const dateLine = chartRank(s._m)===2
+        ? `最終プレー: ${escapeHtml(s.lastStr)}（${daysAgo(s.last)}日前）`
+        : (s._m.clear==="NO PLAY" ? "未プレー" : "今作未プレー");
+      return `<div style="background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:14px;">
+        <div style="font-size:16px;font-weight:700;margin-bottom:4px;">${escapeHtml(s.title)}</div>
+        <div style="font-size:12px;color:var(--text-mid);">${escapeHtml(s.genre)} / ${escapeHtml(s.artist)}</div>
+        <div style="font-size:12px;color:var(--text-mid);margin-top:4px;">${escapeHtml(s.version)}</div>
+        <div style="margin-top:6px;">${lv}</div>
+        <div style="font-size:12px;margin-top:8px;color:var(--warn);font-weight:700;">${dateLine}</div>
+      </div>`;
+    }).join("");
+    $("pickArea").style.display="block";
+  });
+
+  let curSongs=null, pastData=[];
+
+  function loadCur(text,label){
+    const songs = parseSongs(text);
+    if(!songs.length){ alert("CSVデータを認識できませんでした。"); return; }
+    curSongs = songs;
+    $("statusCur").textContent = `${label}（${curSongs.length}曲）`;
+    if(!restoring) saveLS(LS_CUR,{label,text});
+    runCompare();
   }
-  const includeUnplayed = document.getElementById("includeUnplayed").checked;
-  const curDjSel = document.getElementById("djFilterCur").value;
-  const pastDjSel = document.getElementById("djFilterPast").value;
-  const rows=[];
-  for(const s of curSongs){
-    for(let d=0;d<5;d++){
-      const cur = s.charts[d];
-      if(cur.level===0) continue;
-      if(lv2 && cur.level!==lv2) continue;
-      if(curDjSel && cur.djlevel!==curDjSel) continue;
-      let best=0, bestFile="", bestDj="---";
-      for(const p of pastData){
-        const ps = p.map.get(s.title);
-        if(!ps) continue;
-        const sc = ps.charts[d].score;
-        if(sc>best){best=sc;bestFile=p.name;bestDj=ps.charts[d].djlevel;}
-      }
-      if(best===0) continue;
-      if(pastDjSel && bestDj!==pastDjSel) continue;
-      if(cur.score < best && (cur.score>0 || includeUnplayed)){
-        rows.push({title:s.title, di:d, lv:cur.level, lamp:cur.clear,
-                   curDj:cur.djlevel, pastDj:bestDj,
-                   cur:cur.score, best, diffN:cur.score-best});
+  function addPast(text,label){
+    const songs = parseSongs(text);
+    if(!songs.length){ alert("CSVデータを認識できませんでした。"); return; }
+    const map=new Map();
+    songs.forEach(s=>map.set(s.title,s));
+    pastData.push({name:label, map});
+    pastRaw.push({label, text});
+    if(!restoring) saveLS(LS_PAST, pastRaw);
+    renderPastStatus();
+    runCompare();
+  }
+  function renderPastStatus(){
+    $("statusPast").textContent = pastData.length ? pastData.map(p=>`${p.name}（${p.map.size}曲）`).join(" / ") : "未読み込み";
+  }
+  $("csvCur").addEventListener("change", async e=>{
+    const file=e.target.files[0]; if(!file) return;
+    loadCur(await readCSVFile(file), file.name);
+  });
+  $("pasteBtnCur").addEventListener("click",()=>{
+    const text=$("pasteCur").value;
+    if(!text.trim()){ alert("CSVの内容を貼り付けてください"); return; }
+    loadCur(text,"貼り付け(現行)");
+  });
+  $("csvPast").addEventListener("change", async e=>{
+    for(const file of e.target.files){ addPast(await readCSVFile(file), file.name); }
+    e.target.value="";
+  });
+  $("pasteBtnPast").addEventListener("click",()=>{
+    const ta=$("pastePast");
+    if(!ta.value.trim()){ alert("CSVの内容を貼り付けてください"); return; }
+    addPast(ta.value, `貼り付け(過去${pastData.length+1})`);
+    ta.value="";
+  });
+  $("clearPastBtn").addEventListener("click",()=>{
+    pastData=[]; pastRaw=[];
+    removeLS(LS_PAST);
+    renderPastStatus();
+    root.querySelector("#table2 tbody").innerHTML="";
+    $("count2").innerHTML="現行・過去のCSVを読み込み、レベルを選択すると自動で比較します";
+  });
+  $("clearSaved2").addEventListener("click",()=>{
+    removeLS(LS_CUR); removeLS(LS_PAST);
+    curSongs=null; pastData=[]; pastRaw=[];
+    $("statusCur").textContent="未読み込み";
+    renderPastStatus();
+    root.querySelector("#table2 tbody").innerHTML="";
+    $("count2").innerHTML="現行・過去のCSVを読み込み、レベルを選択すると自動で比較します";
+  });
+
+  function runCompare(){
+    if(!(curSongs && pastData.length)) return;
+    const lv2 = parseInt($("lvFilter2").value)||0;
+    if(!lv2){
+      root.querySelector("#table2 tbody").innerHTML="";
+      $("count2").innerHTML="レベルを選択すると比較結果を表示します";
+      return;
+    }
+    const includeUnplayed = $("includeUnplayed").checked;
+    const curDjSel = $("djFilterCur").value;
+    const pastDjSel = $("djFilterPast").value;
+    const rows=[];
+    for(const s of curSongs){
+      for(let d=0;d<5;d++){
+        const cur = s.charts[d];
+        if(cur.level===0) continue;
+        if(lv2 && cur.level!==lv2) continue;
+        if(curDjSel && cur.djlevel!==curDjSel) continue;
+        let best=0, bestDj="---";
+        for(const p of pastData){
+          const ps = p.map.get(s.title);
+          if(!ps) continue;
+          const sc = ps.charts[d].score;
+          if(sc>best){ best=sc; bestDj=ps.charts[d].djlevel; }
+        }
+        if(best===0) continue;
+        if(pastDjSel && bestDj!==pastDjSel) continue;
+        if(cur.score < best && (cur.score>0 || includeUnplayed)){
+          rows.push({title:s.title, di:d, lv:cur.level, lamp:cur.clear,
+            curDj:cur.djlevel, pastDj:bestDj, cur:cur.score, best, diffN:cur.score-best});
+        }
       }
     }
+    rows.sort((a,b)=>a.diffN-b.diffN);
+    root.querySelector("#table2 tbody").innerHTML = rows.map(r=>{
+      const curCell = r.cur===0
+        ? '<span class="badge">未プレー</span>'
+        : `<span class="djsm">${escapeHtml(r.curDj||"---")}</span><br><span class="scsm">${r.cur}</span>`;
+      return `<tr><td class="ttl"><span class="lvnum" style="color:${diffColor(r.di)}">${r.lv}</span><span class="lampbar" style="${lampStyle(r.lamp)}" title="${escapeHtml(r.lamp)}"></span>${escapeHtml(r.title)}</td>
+        <td>${curCell}</td>
+        <td><span class="djsm">${escapeHtml(r.pastDj||"---")}</span><br><span class="scsm">${r.best}</span></td><td class="down">${r.diffN}</td></tr>`;
+    }).join("");
+    $("count2").innerHTML = `スコアが下がっている譜面: <b style="color:var(--accent);font-size:20px;">${rows.length}</b> 件`;
   }
-  rows.sort((a,b)=>a.diffN-b.diffN);
-  const tb=document.querySelector("#table2 tbody");
-  tb.innerHTML = rows.map(r=>{
-    const curCell = r.cur===0
-      ? '<span class="badge">未プレー</span>'
-      : `<span class="djsm">${escapeHtml(r.curDj||"---")}</span><br><span class="scsm">${r.cur}</span>`;
-    return `<tr><td class="ttl"><span class="lvnum" style="color:${diffColor(r.di)}">${r.lv}</span><span class="lampbar" style="${lampStyle(r.lamp)}" title="${escapeHtml(r.lamp)}"></span>${escapeHtml(r.title)}</td>
-     <td>${curCell}</td>
-     <td><span class="djsm">${escapeHtml(r.pastDj||"---")}</span><br><span class="scsm">${r.best}</span></td><td class="down">${r.diffN}</td></tr>`;
-  }).join("");
-  document.getElementById("count2").innerHTML =
-    `スコアが下がっている譜面: <b>${rows.length}</b> 件`;
-}
-document.getElementById("lvFilter2").addEventListener("change",runCompare);
-document.getElementById("djFilterCur").addEventListener("change",runCompare);
-document.getElementById("djFilterPast").addEventListener("change",runCompare);
-document.getElementById("includeUnplayed").addEventListener("change",runCompare);
+  ["lvFilter2","djFilterCur","djFilterPast","includeUnplayed"].forEach(id=>{
+    $(id).addEventListener("change", runCompare);
+  });
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-}
-
-/* ---------- テーマ切り替え ---------- */
-const THEME_KEY="iidxpc_theme";
-function setTheme(t,save){
-  document.documentElement.dataset.theme=t;
-  if(save){ try{ localStorage.setItem(THEME_KEY,t); }catch(e){} }
-  const mc=document.querySelector('meta[name="theme-color"]');
-  if(mc) mc.setAttribute("content", t==="light" ? "#f2f4fa" : "#0d0f1a");
-  /* ダーク時は☀️のみ、ライト時は🌙のみ表示（押すと切り替わる先を示す） */
-  document.getElementById("tgSun").classList.toggle("on", t!=="light");
-  document.getElementById("tgMoon").classList.toggle("on", t==="light");
-  /* ランプ・難易度色を新テーマで描き直す */
-  if(allSongs.length) applyFilter();
-  runCompare();
-}
-document.getElementById("themeToggle").addEventListener("click",()=>{
-  setTheme(isLight() ? "dark" : "light", true);
-});
-(function initTheme(){
-  let t=null;
-  try{ t=localStorage.getItem(THEME_KEY); }catch(e){}
-  /* デフォルトはダークモード（切り替えた場合のみその設定を維持） */
-  setTheme(t==="light" ? "light" : "dark", false);
-})();
-
-/* ---------- 保存データの復元 ---------- */
-(function restoreSaved(){
   restoring=true;
   try{
     const m=JSON.parse(localStorage.getItem(LS_MAIN)||"null");
@@ -755,17 +745,6 @@ document.getElementById("themeToggle").addEventListener("click",()=>{
   }catch(e){ console.warn("復元に失敗(過去):",e); }
   restoring=false;
 })();
-
-/* PWA */
-if("serviceWorker" in navigator && location.protocol==="https:"){
-  navigator.serviceWorker.register("sw.js").catch(()=>{});
-}
 </script>
-
-<footer>
-  本サイトは個人が制作した非公式のファンツールであり、株式会社コナミアミューズメントおよびコナミグループとは一切関係ありません。<br>
-  「beatmania IIDX」「e-amusement」はコナミグループの商標または登録商標です。<br>
-  読み込んだプレーデータはお使いのブラウザ内でのみ処理・保存され、サーバー等の外部に送信されることはありません。
-</footer>
 </body>
 </html>
